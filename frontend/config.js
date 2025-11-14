@@ -1,7 +1,7 @@
 // Configuration for production deployment
-// Update this file with your backend API URL after deploying to Railway
+// Backend API URL is set to Railway deployment
 
-window.API_BASE_URL = 'http://localhost:8000';
+window.API_BASE_URL = 'https://vdsboffertes-production.up.railway.app';
 
-// For production, replace with your Railway backend URL:
-// window.API_BASE_URL = 'https://your-app-name.up.railway.app';
+// For local development, uncomment this line:
+// window.API_BASE_URL = 'http://localhost:8000';

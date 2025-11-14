@@ -28,8 +28,8 @@ app.add_middleware(
 )
 
 # Storage paths
-UPLOAD_DIR = Path("../uploads")
-UPLOAD_DIR.mkdir(exist_ok=True)
+UPLOAD_DIR = Path("/tmp/uploads") if os.getenv("RAILWAY_ENVIRONMENT") else Path("../uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # In-memory storage for sessions (in production, use Redis or DB)
 sessions = {}
