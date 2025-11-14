@@ -343,9 +343,13 @@ async def get_prijzenboek_admin():
         if not default_prijzenboek_path.exists():
             raise HTTPException(status_code=404, detail="Prijzenboek file not found")
 
-        from excel_parser import parse_prijzenboek
+        # Use new parser for the new format
+        try:
+            from .excel_parser_new import parse_prijzenboek_new
+        except ImportError:
+            from excel_parser_new import parse_prijzenboek_new
 
-        prijzenboek_items = parse_prijzenboek(str(default_prijzenboek_path))
+        prijzenboek_items = parse_prijzenboek_new(str(default_prijzenboek_path))
 
         return {
             "items": prijzenboek_items,
@@ -423,11 +427,11 @@ async def upload_prijzenboek_admin(file: UploadFile = File(...)):
 
         # Parse the new file to verify it's valid
         try:
-            from .excel_parser import parse_prijzenboek
+            from .excel_parser_new import parse_prijzenboek_new
         except ImportError:
-            from excel_parser import parse_prijzenboek
+            from excel_parser_new import parse_prijzenboek_new
 
-        prijzenboek_items = parse_prijzenboek(str(prijzenboek_path))
+        prijzenboek_items = parse_prijzenboek_new(str(prijzenboek_path))
 
         return {
             "success": True,

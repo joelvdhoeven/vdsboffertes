@@ -226,16 +226,77 @@ async function handlePrijzenboekUpload(event) {
 }
 
 function downloadTemplate() {
-    // Create a simple CSV/Excel template
+    // Create template matching the actual Excel structure
+    // Columns: A-B (Code, Omschrijving), C-O (Ruimtes), Q (Totaal), R-Y (Eenheid, Prijzen, etc.)
     const template = [
-        ['Code', 'Omschrijving', 'Eenheid (kolom R)', 'Materiaal EUR (kolom S)', 'Uren EUR (kolom T)'],
-        ['A.01.001', 'Voorbeeld item 1', 'm2', '15.50', '2.00'],
-        ['A.01.002', 'Voorbeeld item 2', 'm1', '8.75', '1.50'],
-        ['A.01.003', 'Voorbeeld item 3', 'stu', '25.00', '3.00']
+        // Headers
+        [
+            'CODERING DATABASE',
+            'OMSCHRIJVING VAKMAN MUTATIE',
+            'Algemeen woning',
+            'Hal / Overloop',
+            'Woonkamer',
+            'Keuken',
+            'Toilet',
+            'Badkamer',
+            'Slaapk voor KL',
+            'Slaapk voor GR',
+            'Slaapk achter KL',
+            'Slaapk achter GR',
+            'Zolder',
+            'Berging',
+            'Meerwerk',
+            '', // Kolom P leeg
+            'TOTAAL',
+            'EENHEID',
+            'Materiaal per stuk EXCL BTW',
+            'Uren per stuk EXCL BTW',
+            'Prijs per stuk EXCL BTW',
+            '', // Kolom V leeg
+            'TOTAAL EXCL BTW',
+            'TOTAAL INCL BTW',
+            'OMSCHRIJVING OFFERTE MUTATIE'
+        ],
+        // Example rows
+        [
+            '0000011001',
+            'Badkamerrenovatie >0 - 2 m2',
+            '', '', '', '', '', '', '', '', '', '', '', '', '0', '',
+            '0',
+            'stu',
+            '6285.20',
+            '0.00',
+            '6285.20',
+            '',
+            '0.00',
+            '0.00',
+            'Badkamerrenovatie >0 - 2 m2'
+        ],
+        [
+            'A.01.001',
+            'Voorbeeld werkzaamheid',
+            '', '', '', '', '', '', '', '', '', '', '', '', '0', '',
+            '0',
+            'm2',
+            '15.50',
+            '2.00',
+            '17.50',
+            '',
+            '0.00',
+            '0.00',
+            'Voorbeeld werkzaamheid'
+        ]
     ];
 
     // Convert to CSV
-    const csv = template.map(row => row.join(',')).join('\n');
+    const csv = template.map(row => row.map(cell => {
+        // Escape cells with commas or quotes
+        const str = String(cell);
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+            return '"' + str.replace(/"/g, '""') + '"';
+        }
+        return str;
+    }).join(',')).join('\n');
 
     // Add UTF-8 BOM for proper Excel encoding
     const BOM = '\uFEFF';
@@ -255,9 +316,9 @@ function downloadTemplate() {
 
     // Show confirmation
     const statusSpan = document.getElementById('uploadStatus');
-    statusSpan.textContent = '✅ Sjabloon gedownload';
+    statusSpan.textContent = '✅ Sjabloon gedownload - Importeer in Excel voor beste resultaten';
     statusSpan.style.color = '#27AE60';
     setTimeout(() => {
         statusSpan.textContent = '';
-    }, 3000);
+    }, 4000);
 }
