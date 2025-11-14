@@ -319,6 +319,75 @@ async def get_session_status(session_id: str):
     }
 
 
+# Admin endpoints
+@app.get("/api/admin/prijzenboek")
+async def get_prijzenboek_admin():
+    """Get prijzenboek data for admin panel"""
+    try:
+        # Load the default prijzenboek file
+        default_prijzenboek_path = Path(__file__).parent / "Juiste opnamelijst.xlsx"
+
+        if not default_prijzenboek_path.exists():
+            raise HTTPException(status_code=404, detail="Prijzenboek file not found")
+
+        from excel_parser import parse_prijzenboek
+
+        prijzenboek_items = parse_prijzenboek(str(default_prijzenboek_path))
+
+        return {
+            "items": prijzenboek_items,
+            "total": len(prijzenboek_items)
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/admin/prijzenboek")
+async def save_prijzenboek_admin(data: Dict[str, Any]):
+    """Save updated prijzenboek data"""
+    try:
+        import openpyxl
+
+        # Load the workbook
+        prijzenboek_path = Path(__file__).parent / "Juiste opnamelijst.xlsx"
+
+        if not prijzenboek_path.exists():
+            raise HTTPException(status_code=404, detail="Prijzenboek file not found")
+
+        wb = openpyxl.load_workbook(str(prijzenboek_path))
+        sheet = wb.active
+
+        # Update existing rows and add new ones
+        items = data.get("items", [])
+
+        # Clear existing data (keep headers)
+        for row in range(2, sheet.max_row + 1):
+            for col in range(1, sheet.max_column + 1):
+                sheet.cell(row=row, column=col).value = None
+
+        # Write updated data
+        for idx, item in enumerate(items, start=2):
+            sheet.cell(row=idx, column=1).value = item.get("code", "")
+            sheet.cell(row=idx, column=2).value = item.get("omschrijving", "")
+            sheet.cell(row=idx, column=18).value = item.get("eenheid", "")  # Column R
+            sheet.cell(row=idx, column=19).value = item.get("materiaal", 0)  # Column S
+            sheet.cell(row=idx, column=20).value = item.get("uren", 0)  # Column T
+
+        # Save workbook
+        wb.save(str(prijzenboek_path))
+        wb.close()
+
+        return {
+            "success": True,
+            "message": "Prijzenboek successfully updated",
+            "items_saved": len(items)
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
