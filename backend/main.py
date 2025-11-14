@@ -148,15 +148,24 @@ async def process_parse(session_id: str):
         if not session["notes_path"]:
             raise HTTPException(status_code=400, detail="Notes not uploaded")
 
-        if not session["prijzenboek_path"]:
-            raise HTTPException(status_code=400, detail="Prijzenboek not uploaded")
-
         # Parse opname
         parsed_opname = parse_docx_opname(session["notes_path"])
         session["parsed_opname"] = parsed_opname
 
-        # Parse prijzenboek
-        prijzenboek_data = parse_prijzenboek(session["prijzenboek_path"])
+        # Use default prijzenboek from admin if not uploaded for this session
+        if not session["prijzenboek_path"]:
+            default_prijzenboek_path = Path(__file__).parent / "Juiste opnamelijst.xlsx"
+            if not default_prijzenboek_path.exists():
+                raise HTTPException(status_code=404, detail="Default prijzenboek not found. Please upload via admin panel.")
+            session["prijzenboek_path"] = str(default_prijzenboek_path)
+
+        # Parse prijzenboek using new parser
+        try:
+            from .excel_parser_new import parse_prijzenboek_new
+        except ImportError:
+            from excel_parser_new import parse_prijzenboek_new
+
+        prijzenboek_data = parse_prijzenboek_new(session["prijzenboek_path"])
         session["prijzenboek_data"] = prijzenboek_data
 
         # Count werkzaamheden
