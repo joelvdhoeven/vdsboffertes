@@ -1,6 +1,7 @@
 // Offerte Generator - Frontend JavaScript
 
-const API_BASE_URL = 'http://localhost:8000';
+// Auto-detect API URL: use environment variable or fall back to localhost
+const API_BASE_URL = window.API_BASE_URL || 'http://localhost:8000';
 
 let sessionId = null;
 let matches = [];
