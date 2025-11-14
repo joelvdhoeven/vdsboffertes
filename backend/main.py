@@ -11,10 +11,10 @@ import shutil
 from pathlib import Path
 import uuid
 
-from document_parser import parse_docx_opname
-from excel_parser import parse_prijzenboek
-from matcher import match_werkzaamheden
-from excel_generator import generate_filled_excel
+from .document_parser import parse_docx_opname
+from .excel_parser import parse_prijzenboek
+from .matcher import match_werkzaamheden
+from .excel_generator import generate_filled_excel
 
 app = FastAPI(title="Offerte Generator API", version="1.0.0")
 
