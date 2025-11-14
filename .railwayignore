@@ -1,0 +1,9 @@
+start.sh
+frontend/
+uploads/
+*.md
+PROJECT_BRIEF_OFFERTE_GENERATOR.md
+QUICK_START.md
+*.docx
+*.xlsm
+.git/

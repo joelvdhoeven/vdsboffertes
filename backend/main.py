@@ -7,14 +7,27 @@ from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import os
+import sys
 import shutil
 from pathlib import Path
 import uuid
 
-from document_parser import parse_docx_opname
-from excel_parser import parse_prijzenboek
-from matcher import match_werkzaamheden
-from excel_generator import generate_filled_excel
+# Add backend directory to path for imports
+sys.path.insert(0, os.path.dirname(__file__))
+
+# Import backend modules
+try:
+    # Try relative imports first (when running as package)
+    from .document_parser import parse_docx_opname
+    from .excel_parser import parse_prijzenboek
+    from .matcher import match_werkzaamheden
+    from .excel_generator import generate_filled_excel
+except ImportError:
+    # Fall back to absolute imports (when running directly)
+    from document_parser import parse_docx_opname
+    from excel_parser import parse_prijzenboek
+    from matcher import match_werkzaamheden
+    from excel_generator import generate_filled_excel
 
 app = FastAPI(title="Offerte Generator API", version="1.0.0")
 
@@ -28,8 +41,8 @@ app.add_middleware(
 )
 
 # Storage paths
-UPLOAD_DIR = Path("../uploads")
-UPLOAD_DIR.mkdir(exist_ok=True)
+UPLOAD_DIR = Path("/tmp/uploads") if os.getenv("RAILWAY_ENVIRONMENT") else Path("../uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # In-memory storage for sessions (in production, use Redis or DB)
 sessions = {}
