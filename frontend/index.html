@@ -44,7 +44,7 @@
             margin-bottom: 20px;
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between;
         }
 
         .logo-container {
@@ -57,6 +57,32 @@
             max-height: 80px;
             width: auto;
             display: block;
+        }
+
+        /* Navigation */
+        .nav {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .nav a:hover {
+            background: var(--bg-light);
+            border-color: var(--primary-color);
+        }
+
+        .nav a.active {
+            background: var(--primary-color);
+            color: white;
         }
 
         .card {
@@ -379,6 +405,10 @@
             <div class="logo-container">
                 <img src="assets/logo.png" alt="Offerte Generator" class="logo" id="companyLogo">
             </div>
+            <nav class="nav">
+                <a href="index.html" class="active">Home</a>
+                <a href="admin.html">Admin</a>
+            </nav>
         </div>
 
         <div class="card">

@@ -180,3 +180,80 @@ async function savePrijzenboek() {
         alert('❌ Fout bij opslaan: ' + error.message);
     }
 }
+
+async function handlePrijzenboekUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const statusSpan = document.getElementById('uploadStatus');
+    statusSpan.textContent = '⏳ Uploaden...';
+    statusSpan.style.color = '#F7931E';
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/admin/prijzenboek/upload`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Upload failed');
+        }
+
+        const data = await response.json();
+        statusSpan.textContent = `✅ ${data.items_loaded} items geladen`;
+        statusSpan.style.color = '#27AE60';
+
+        // Reload the table with new data
+        await loadPrijzenboek();
+
+        // Clear status after 3 seconds
+        setTimeout(() => {
+            statusSpan.textContent = '';
+        }, 3000);
+
+    } catch (error) {
+        console.error('Error uploading prijzenboek:', error);
+        statusSpan.textContent = `❌ ${error.message}`;
+        statusSpan.style.color = '#E74C3C';
+    }
+
+    // Reset file input
+    event.target.value = '';
+}
+
+function downloadTemplate() {
+    // Create a simple CSV/Excel template
+    const template = [
+        ['Code', 'Omschrijving', 'Eenheid (kolom R)', 'Materiaal € (kolom S)', 'Uren € (kolom T)'],
+        ['A.01.001', 'Voorbeeld item 1', 'm2', '15.50', '2.00'],
+        ['A.01.002', 'Voorbeeld item 2', 'm1', '8.75', '1.50'],
+        ['A.01.003', 'Voorbeeld item 3', 'stu', '25.00', '3.00']
+    ];
+
+    // Convert to CSV
+    const csv = template.map(row => row.join(',')).join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'prijzenboek_sjabloon.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Show confirmation
+    const statusSpan = document.getElementById('uploadStatus');
+    statusSpan.textContent = '✅ Sjabloon gedownload';
+    statusSpan.style.color = '#27AE60';
+    setTimeout(() => {
+        statusSpan.textContent = '';
+    }, 3000);
+}

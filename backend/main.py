@@ -401,6 +401,48 @@ async def save_prijzenboek_admin(data: Dict[str, Any]):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/admin/prijzenboek/upload")
+async def upload_prijzenboek_admin(file: UploadFile = File(...)):
+    """Upload and replace prijzenboek Excel file"""
+    try:
+        # Validate file type
+        if not file.filename.endswith(('.xlsx', '.xlsm', '.xls')):
+            raise HTTPException(status_code=400, detail="Only Excel files are supported")
+
+        # Save uploaded file
+        prijzenboek_path = Path(__file__).parent / "Juiste opnamelijst.xlsx"
+
+        # Backup old file
+        backup_path = Path(__file__).parent / "Juiste opnamelijst_backup.xlsx"
+        if prijzenboek_path.exists():
+            shutil.copy(str(prijzenboek_path), str(backup_path))
+
+        # Save new file
+        with open(prijzenboek_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        # Parse the new file to verify it's valid
+        try:
+            from .excel_parser import parse_prijzenboek
+        except ImportError:
+            from excel_parser import parse_prijzenboek
+
+        prijzenboek_items = parse_prijzenboek(str(prijzenboek_path))
+
+        return {
+            "success": True,
+            "message": "Prijzenboek uploaded successfully",
+            "items_loaded": len(prijzenboek_items),
+            "filename": file.filename
+        }
+
+    except Exception as e:
+        # Restore backup if upload failed
+        if backup_path.exists():
+            shutil.copy(str(backup_path), str(prijzenboek_path))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -323,6 +323,20 @@
                 <button class="btn" onclick="showAddModal()">+ Nieuwe Regel Toevoegen</button>
             </div>
 
+            <!-- Upload Section -->
+            <div class="card" style="margin-bottom: 20px;">
+                <h3 style="margin-bottom: 15px; color: var(--secondary-color);">Upload Prijzenboek</h3>
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <input type="file" id="prijzenboekUpload" accept=".xlsx,.xlsm,.xls" style="display: none;" onchange="handlePrijzenboekUpload(event)">
+                    <button class="btn" onclick="document.getElementById('prijzenboekUpload').click()">📤 Upload Excel</button>
+                    <button class="btn" style="background: var(--accent-color);" onclick="downloadTemplate()">📥 Download Sjabloon</button>
+                    <span id="uploadStatus" style="color: var(--text-light); font-size: 14px;"></span>
+                </div>
+                <p style="margin-top: 10px; font-size: 13px; color: var(--text-light);">
+                    Upload een Excel bestand met kolommen: Code, Omschrijving, Eenheid (R), Materiaal (S), Uren (T)
+                </p>
+            </div>
+
             <!-- Statistics -->
             <div class="stats">
                 <div class="stat-card">
