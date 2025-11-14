@@ -228,7 +228,7 @@ async function handlePrijzenboekUpload(event) {
 function downloadTemplate() {
     // Create a simple CSV/Excel template
     const template = [
-        ['Code', 'Omschrijving', 'Eenheid (kolom R)', 'Materiaal € (kolom S)', 'Uren € (kolom T)'],
+        ['Code', 'Omschrijving', 'Eenheid (kolom R)', 'Materiaal EUR (kolom S)', 'Uren EUR (kolom T)'],
         ['A.01.001', 'Voorbeeld item 1', 'm2', '15.50', '2.00'],
         ['A.01.002', 'Voorbeeld item 2', 'm1', '8.75', '1.50'],
         ['A.01.003', 'Voorbeeld item 3', 'stu', '25.00', '3.00']
@@ -237,8 +237,12 @@ function downloadTemplate() {
     // Convert to CSV
     const csv = template.map(row => row.join(',')).join('\n');
 
+    // Add UTF-8 BOM for proper Excel encoding
+    const BOM = '\uFEFF';
+    const csvWithBOM = BOM + csv;
+
     // Create blob and download
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
 
