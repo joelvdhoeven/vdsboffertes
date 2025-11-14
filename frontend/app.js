@@ -15,14 +15,6 @@ document.getElementById('notesFile').addEventListener('change', function(e) {
     }
 });
 
-document.getElementById('prijzenboekFile').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        updateFileLabel('prijzenboekLabel', file.name, true);
-        checkFilesReady();
-    }
-});
-
 function updateFileLabel(labelId, fileName, hasFile) {
     const label = document.getElementById(labelId);
     if (hasFile) {
@@ -39,10 +31,9 @@ function updateFileLabel(labelId, fileName, hasFile) {
 
 function checkFilesReady() {
     const notesFile = document.getElementById('notesFile').files[0];
-    const prijzenboekFile = document.getElementById('prijzenboekFile').files[0];
     const generateBtn = document.getElementById('generateBtn');
 
-    if (notesFile && prijzenboekFile) {
+    if (notesFile) {
         generateBtn.disabled = false;
     }
 }
@@ -50,25 +41,20 @@ function checkFilesReady() {
 // Generate button handler
 document.getElementById('generateBtn').addEventListener('click', async function() {
     try {
-        showProgress(true, 'Uploading bestanden...');
+        showProgress(true, 'Uploading bestand...');
 
         // Step 1: Upload notes
-        updateProgress(20, 'Uploading opname notities...');
+        updateProgress(25, 'Uploading opname notities...');
         const notesFile = document.getElementById('notesFile').files[0];
         sessionId = await uploadNotes(notesFile);
 
-        // Step 2: Upload prijzenboek
-        updateProgress(40, 'Uploading prijzenboek...');
-        const prijzenboekFile = document.getElementById('prijzenboekFile').files[0];
-        await uploadPrijzenboek(sessionId, prijzenboekFile);
-
-        // Step 3: Parse documents
-        updateProgress(60, 'Parseren documenten...');
+        // Step 2: Parse documents (using default prijzenboek from admin)
+        updateProgress(50, 'Parseren document...');
         const parseResult = await parseDocuments(sessionId);
         showStatus(`Gevonden: ${parseResult.werkzaamheden} werkzaamheden in ${parseResult.ruimtes} ruimtes`, 'info');
 
-        // Step 4: Match werkzaamheden
-        updateProgress(80, 'Matching werkzaamheden met prijzenboek...');
+        // Step 3: Match werkzaamheden
+        updateProgress(75, 'Matching werkzaamheden met prijzenboek...');
         const matchResult = await matchWerkzaamheden(sessionId);
 
         updateProgress(100, 'Klaar!');

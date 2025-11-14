@@ -148,15 +148,24 @@ async def process_parse(session_id: str):
         if not session["notes_path"]:
             raise HTTPException(status_code=400, detail="Notes not uploaded")
 
-        if not session["prijzenboek_path"]:
-            raise HTTPException(status_code=400, detail="Prijzenboek not uploaded")
-
         # Parse opname
         parsed_opname = parse_docx_opname(session["notes_path"])
         session["parsed_opname"] = parsed_opname
 
-        # Parse prijzenboek
-        prijzenboek_data = parse_prijzenboek(session["prijzenboek_path"])
+        # Use default prijzenboek from admin if not uploaded for this session
+        if not session["prijzenboek_path"]:
+            default_prijzenboek_path = Path(__file__).parent / "Juiste opnamelijst.xlsx"
+            if not default_prijzenboek_path.exists():
+                raise HTTPException(status_code=404, detail="Default prijzenboek not found. Please upload via admin panel.")
+            session["prijzenboek_path"] = str(default_prijzenboek_path)
+
+        # Parse prijzenboek using new parser
+        try:
+            from .excel_parser_new import parse_prijzenboek_new
+        except ImportError:
+            from excel_parser_new import parse_prijzenboek_new
+
+        prijzenboek_data = parse_prijzenboek_new(session["prijzenboek_path"])
         session["prijzenboek_data"] = prijzenboek_data
 
         # Count werkzaamheden
@@ -343,9 +352,13 @@ async def get_prijzenboek_admin():
         if not default_prijzenboek_path.exists():
             raise HTTPException(status_code=404, detail="Prijzenboek file not found")
 
-        from excel_parser import parse_prijzenboek
+        # Use new parser for the new format
+        try:
+            from .excel_parser_new import parse_prijzenboek_new
+        except ImportError:
+            from excel_parser_new import parse_prijzenboek_new
 
-        prijzenboek_items = parse_prijzenboek(str(default_prijzenboek_path))
+        prijzenboek_items = parse_prijzenboek_new(str(default_prijzenboek_path))
 
         return {
             "items": prijzenboek_items,
@@ -379,13 +392,36 @@ async def save_prijzenboek_admin(data: Dict[str, Any]):
             for col in range(1, sheet.max_column + 1):
                 sheet.cell(row=row, column=col).value = None
 
-        # Write updated data
+        # Write updated data with all columns
         for idx, item in enumerate(items, start=2):
-            sheet.cell(row=idx, column=1).value = item.get("code", "")
-            sheet.cell(row=idx, column=2).value = item.get("omschrijving", "")
-            sheet.cell(row=idx, column=18).value = item.get("eenheid", "")  # Column R
-            sheet.cell(row=idx, column=19).value = item.get("materiaal", 0)  # Column S
-            sheet.cell(row=idx, column=20).value = item.get("uren", 0)  # Column T
+            # Basis informatie
+            sheet.cell(row=idx, column=1).value = item.get("code", "")  # A
+            sheet.cell(row=idx, column=2).value = item.get("omschrijving", "")  # B
+
+            # Ruimtes (C-O)
+            sheet.cell(row=idx, column=3).value = item.get("algemeen_woning", 0)  # C
+            sheet.cell(row=idx, column=4).value = item.get("hal_overloop", 0)  # D
+            sheet.cell(row=idx, column=5).value = item.get("woonkamer", 0)  # E
+            sheet.cell(row=idx, column=6).value = item.get("keuken", 0)  # F
+            sheet.cell(row=idx, column=7).value = item.get("toilet", 0)  # G
+            sheet.cell(row=idx, column=8).value = item.get("badkamer", 0)  # H
+            sheet.cell(row=idx, column=9).value = item.get("slaapk_voor_kl", 0)  # I
+            sheet.cell(row=idx, column=10).value = item.get("slaapk_voor_gr", 0)  # J
+            sheet.cell(row=idx, column=11).value = item.get("slaapk_achter_kl", 0)  # K
+            sheet.cell(row=idx, column=12).value = item.get("slaapk_achter_gr", 0)  # L
+            sheet.cell(row=idx, column=13).value = item.get("zolder", 0)  # M
+            sheet.cell(row=idx, column=14).value = item.get("berging", 0)  # N
+            sheet.cell(row=idx, column=15).value = item.get("meerwerk", 0)  # O
+
+            # Totaal en prijzen
+            sheet.cell(row=idx, column=17).value = item.get("totaal", 0)  # Q
+            sheet.cell(row=idx, column=18).value = item.get("eenheid", "")  # R
+            sheet.cell(row=idx, column=19).value = item.get("materiaal", 0)  # S
+            sheet.cell(row=idx, column=20).value = item.get("uren", 0)  # T
+            sheet.cell(row=idx, column=21).value = item.get("prijs_per_stuk", 0)  # U
+            sheet.cell(row=idx, column=23).value = item.get("totaal_excl", 0)  # W
+            sheet.cell(row=idx, column=24).value = item.get("totaal_incl", 0)  # X
+            sheet.cell(row=idx, column=25).value = item.get("omschrijving_offerte", item.get("omschrijving", ""))  # Y
 
         # Save workbook
         wb.save(str(prijzenboek_path))
@@ -423,11 +459,11 @@ async def upload_prijzenboek_admin(file: UploadFile = File(...)):
 
         # Parse the new file to verify it's valid
         try:
-            from .excel_parser import parse_prijzenboek
+            from .excel_parser_new import parse_prijzenboek_new
         except ImportError:
-            from excel_parser import parse_prijzenboek
+            from excel_parser_new import parse_prijzenboek_new
 
-        prijzenboek_items = parse_prijzenboek(str(prijzenboek_path))
+        prijzenboek_items = parse_prijzenboek_new(str(prijzenboek_path))
 
         return {
             "success": True,
