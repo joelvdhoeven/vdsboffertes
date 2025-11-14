@@ -392,13 +392,36 @@ async def save_prijzenboek_admin(data: Dict[str, Any]):
             for col in range(1, sheet.max_column + 1):
                 sheet.cell(row=row, column=col).value = None
 
-        # Write updated data
+        # Write updated data with all columns
         for idx, item in enumerate(items, start=2):
-            sheet.cell(row=idx, column=1).value = item.get("code", "")
-            sheet.cell(row=idx, column=2).value = item.get("omschrijving", "")
-            sheet.cell(row=idx, column=18).value = item.get("eenheid", "")  # Column R
-            sheet.cell(row=idx, column=19).value = item.get("materiaal", 0)  # Column S
-            sheet.cell(row=idx, column=20).value = item.get("uren", 0)  # Column T
+            # Basis informatie
+            sheet.cell(row=idx, column=1).value = item.get("code", "")  # A
+            sheet.cell(row=idx, column=2).value = item.get("omschrijving", "")  # B
+
+            # Ruimtes (C-O)
+            sheet.cell(row=idx, column=3).value = item.get("algemeen_woning", 0)  # C
+            sheet.cell(row=idx, column=4).value = item.get("hal_overloop", 0)  # D
+            sheet.cell(row=idx, column=5).value = item.get("woonkamer", 0)  # E
+            sheet.cell(row=idx, column=6).value = item.get("keuken", 0)  # F
+            sheet.cell(row=idx, column=7).value = item.get("toilet", 0)  # G
+            sheet.cell(row=idx, column=8).value = item.get("badkamer", 0)  # H
+            sheet.cell(row=idx, column=9).value = item.get("slaapk_voor_kl", 0)  # I
+            sheet.cell(row=idx, column=10).value = item.get("slaapk_voor_gr", 0)  # J
+            sheet.cell(row=idx, column=11).value = item.get("slaapk_achter_kl", 0)  # K
+            sheet.cell(row=idx, column=12).value = item.get("slaapk_achter_gr", 0)  # L
+            sheet.cell(row=idx, column=13).value = item.get("zolder", 0)  # M
+            sheet.cell(row=idx, column=14).value = item.get("berging", 0)  # N
+            sheet.cell(row=idx, column=15).value = item.get("meerwerk", 0)  # O
+
+            # Totaal en prijzen
+            sheet.cell(row=idx, column=17).value = item.get("totaal", 0)  # Q
+            sheet.cell(row=idx, column=18).value = item.get("eenheid", "")  # R
+            sheet.cell(row=idx, column=19).value = item.get("materiaal", 0)  # S
+            sheet.cell(row=idx, column=20).value = item.get("uren", 0)  # T
+            sheet.cell(row=idx, column=21).value = item.get("prijs_per_stuk", 0)  # U
+            sheet.cell(row=idx, column=23).value = item.get("totaal_excl", 0)  # W
+            sheet.cell(row=idx, column=24).value = item.get("totaal_incl", 0)  # X
+            sheet.cell(row=idx, column=25).value = item.get("omschrijving_offerte", item.get("omschrijving", ""))  # Y
 
         # Save workbook
         wb.save(str(prijzenboek_path))

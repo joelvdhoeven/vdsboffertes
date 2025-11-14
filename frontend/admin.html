@@ -385,29 +385,114 @@
 
     <!-- Add/Edit Modal -->
     <div id="addModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
             <h2>Nieuwe Regel Toevoegen</h2>
             <form id="addForm" onsubmit="return handleAddItem(event)">
+                <!-- Basis Informatie -->
+                <h3 style="color: var(--primary-color); margin-top: 20px; margin-bottom: 15px; border-bottom: 2px solid var(--border-color); padding-bottom: 5px;">Basis Informatie</h3>
                 <div class="form-group">
                     <label>Code *</label>
                     <input type="text" id="newCode" required>
                 </div>
                 <div class="form-group">
-                    <label>Omschrijving *</label>
+                    <label>Omschrijving Vakman Mutatie *</label>
                     <input type="text" id="newOmschrijving" required>
                 </div>
                 <div class="form-group">
-                    <label>Eenheid</label>
-                    <input type="text" id="newEenheid" placeholder="m2, m1, stu, etc.">
+                    <label>Omschrijving Offerte Mutatie</label>
+                    <input type="text" id="newOfferteOmschrijving" placeholder="Beschrijving voor offerte">
                 </div>
-                <div class="form-group">
-                    <label>Materiaal € (excl. BTW)</label>
-                    <input type="number" step="0.01" id="newMateriaal" placeholder="0.00">
+
+                <!-- Ruimtes -->
+                <h3 style="color: var(--primary-color); margin-top: 20px; margin-bottom: 15px; border-bottom: 2px solid var(--border-color); padding-bottom: 5px;">Ruimtes (Aantallen)</h3>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                    <div class="form-group">
+                        <label>Algemeen woning</label>
+                        <input type="number" step="0.01" id="newAlgemeenWoning" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Hal / Overloop</label>
+                        <input type="number" step="0.01" id="newHalOverloop" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Woonkamer</label>
+                        <input type="number" step="0.01" id="newWoonkamer" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Keuken</label>
+                        <input type="number" step="0.01" id="newKeuken" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Toilet</label>
+                        <input type="number" step="0.01" id="newToilet" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Badkamer</label>
+                        <input type="number" step="0.01" id="newBadkamer" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Slaapk voor KL</label>
+                        <input type="number" step="0.01" id="newSlaapkVoorKL" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Slaapk voor GR</label>
+                        <input type="number" step="0.01" id="newSlaapkVoorGR" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Slaapk achter KL</label>
+                        <input type="number" step="0.01" id="newSlaapkAchterKL" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Slaapk achter GR</label>
+                        <input type="number" step="0.01" id="newSlaapkAchterGR" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Zolder</label>
+                        <input type="number" step="0.01" id="newZolder" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Berging</label>
+                        <input type="number" step="0.01" id="newBerging" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Meerwerk</label>
+                        <input type="number" step="0.01" id="newMeerwerk" placeholder="0">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Uren € (excl. BTW)</label>
-                    <input type="number" step="0.01" id="newUren" placeholder="0.00">
+
+                <!-- Prijzen -->
+                <h3 style="color: var(--primary-color); margin-top: 20px; margin-bottom: 15px; border-bottom: 2px solid var(--border-color); padding-bottom: 5px;">Prijzen</h3>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                    <div class="form-group">
+                        <label>Eenheid *</label>
+                        <input type="text" id="newEenheid" placeholder="m2, m1, stu, etc." required>
+                    </div>
+                    <div class="form-group">
+                        <label>Totaal</label>
+                        <input type="number" step="0.01" id="newTotaal" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Materiaal per stuk (excl. BTW)</label>
+                        <input type="number" step="0.01" id="newMateriaal" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Uren per stuk (excl. BTW)</label>
+                        <input type="number" step="0.01" id="newUren" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Prijs per stuk (excl. BTW)</label>
+                        <input type="number" step="0.01" id="newPrijsPerStuk" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Totaal (excl. BTW)</label>
+                        <input type="number" step="0.01" id="newTotaalExcl" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Totaal (incl. BTW)</label>
+                        <input type="number" step="0.01" id="newTotaalIncl" placeholder="0.00">
+                    </div>
                 </div>
+
                 <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 30px;">
                     <button type="button" class="btn" style="background: #95a5a6;" onclick="closeModal()">Annuleren</button>
                     <button type="submit" class="btn btn-success">Toevoegen</button>

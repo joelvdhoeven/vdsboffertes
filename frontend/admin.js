@@ -132,9 +132,31 @@ function handleAddItem(event) {
     const newItem = {
         code: document.getElementById('newCode').value,
         omschrijving: document.getElementById('newOmschrijving').value,
+        omschrijving_offerte: document.getElementById('newOfferteOmschrijving').value || document.getElementById('newOmschrijving').value,
+
+        // Ruimtes
+        algemeen_woning: parseFloat(document.getElementById('newAlgemeenWoning').value) || 0,
+        hal_overloop: parseFloat(document.getElementById('newHalOverloop').value) || 0,
+        woonkamer: parseFloat(document.getElementById('newWoonkamer').value) || 0,
+        keuken: parseFloat(document.getElementById('newKeuken').value) || 0,
+        toilet: parseFloat(document.getElementById('newToilet').value) || 0,
+        badkamer: parseFloat(document.getElementById('newBadkamer').value) || 0,
+        slaapk_voor_kl: parseFloat(document.getElementById('newSlaapkVoorKL').value) || 0,
+        slaapk_voor_gr: parseFloat(document.getElementById('newSlaapkVoorGR').value) || 0,
+        slaapk_achter_kl: parseFloat(document.getElementById('newSlaapkAchterKL').value) || 0,
+        slaapk_achter_gr: parseFloat(document.getElementById('newSlaapkAchterGR').value) || 0,
+        zolder: parseFloat(document.getElementById('newZolder').value) || 0,
+        berging: parseFloat(document.getElementById('newBerging').value) || 0,
+        meerwerk: parseFloat(document.getElementById('newMeerwerk').value) || 0,
+
+        // Prijzen
+        totaal: parseFloat(document.getElementById('newTotaal').value) || 0,
         eenheid: document.getElementById('newEenheid').value || 'stu',
         materiaal: parseFloat(document.getElementById('newMateriaal').value) || 0,
-        uren: parseFloat(document.getElementById('newUren').value) || 0
+        uren: parseFloat(document.getElementById('newUren').value) || 0,
+        prijs_per_stuk: parseFloat(document.getElementById('newPrijsPerStuk').value) || 0,
+        totaal_excl: parseFloat(document.getElementById('newTotaalExcl').value) || 0,
+        totaal_incl: parseFloat(document.getElementById('newTotaalIncl').value) || 0
     };
 
     prijzenboekData.push(newItem);
