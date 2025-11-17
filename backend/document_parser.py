@@ -94,10 +94,18 @@ def is_room_header(text: str) -> bool:
 
 def parse_docx_opname(file_path: str) -> Dict[str, Any]:
     """
-    Parse a Samsung Notes DOCX export
+    Parse a Samsung Notes DOCX or TXT export
     Returns structured data with rooms and werkzaamheden
     """
-    doc = Document(file_path)
+    # Check if it's a text file
+    if file_path.endswith('.txt'):
+        # Parse plain text file
+        with open(file_path, 'r', encoding='utf-8') as f:
+            lines = [line.strip() for line in f.readlines()]
+    else:
+        # Parse DOCX file
+        doc = Document(file_path)
+        lines = [para.text.strip() for para in doc.paragraphs]
 
     # Extract metadata and content
     metadata = {
@@ -110,8 +118,7 @@ def parse_docx_opname(file_path: str) -> Dict[str, Any]:
     current_ruimte = None
     first_line = True
 
-    for para in doc.paragraphs:
-        text = para.text.strip()
+    for text in lines:
 
         if not text:
             continue

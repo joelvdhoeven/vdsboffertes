@@ -14,7 +14,9 @@
       "Bash(git commit:*)",
       "Bash(curl:*)",
       "Bash(tasklist)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(npx vercel:*)",
+      "Bash(railway --version)"
     ],
     "deny": [],
     "ask": []
