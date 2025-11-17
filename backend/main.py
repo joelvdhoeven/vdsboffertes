@@ -66,6 +66,11 @@ class GenerateRequest(BaseModel):
     matches: List[MatchReview]
 
 
+class TextUploadRequest(BaseModel):
+    """Model for text upload request"""
+    text: str
+
+
 @app.get("/")
 async def root():
     """Health check endpoint"""
@@ -105,6 +110,46 @@ async def upload_notes(file: UploadFile = File(...)):
             "message": "Notes uploaded successfully"
         }
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/upload/notes-text")
+async def upload_notes_text(request: TextUploadRequest):
+    """Upload Samsung Notes as plain text (copy-paste)"""
+    try:
+        # Validate text content
+        if not request.text or len(request.text.strip()) < 10:
+            raise HTTPException(status_code=400, detail="Text must be at least 10 characters long")
+
+        # Create session
+        session_id = str(uuid.uuid4())
+        session_dir = UPLOAD_DIR / session_id
+        session_dir.mkdir(exist_ok=True)
+
+        # Save text as .txt file
+        notes_path = session_dir / "notes_pasted.txt"
+        with open(notes_path, "w", encoding="utf-8") as f:
+            f.write(request.text)
+
+        # Store session
+        sessions[session_id] = {
+            "notes_path": str(notes_path),
+            "prijzenboek_path": None,
+            "parsed_opname": None,
+            "prijzenboek_data": None,
+            "matches": None
+        }
+
+        return {
+            "session_id": session_id,
+            "filename": "pasted_text.txt",
+            "message": "Text uploaded successfully",
+            "text_length": len(request.text)
+        }
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

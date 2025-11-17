@@ -353,6 +353,60 @@
             display: none;
         }
 
+        /* Toggle Switch Styles */
+        .input-mode-toggle {
+            display: flex;
+            background: var(--bg-light);
+            border-radius: 8px;
+            padding: 4px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .toggle-option {
+            flex: 1;
+            padding: 12px 20px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: 500;
+            color: var(--text-light);
+            transition: all 0.3s;
+        }
+
+        .toggle-option.active {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+        }
+
+        .toggle-option:hover:not(.active) {
+            background: #e9ecef;
+        }
+
+        .text-input-area {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-light);
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        .text-input-area:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: #FFF5F0;
+        }
+
+        .text-input-area::placeholder {
+            color: var(--text-light);
+        }
+
         .download-section {
             display: none;
             text-align: center;
@@ -418,7 +472,18 @@
 
             <!-- Upload Section -->
             <div id="uploadSection">
-                <div class="upload-section">
+                <!-- Input Mode Toggle -->
+                <div class="input-mode-toggle">
+                    <div id="toggleFile" class="toggle-option active" onclick="setInputMode('file')">
+                        📁 Upload Bestand
+                    </div>
+                    <div id="toggleText" class="toggle-option" onclick="setInputMode('text')">
+                        📝 Plak Tekst
+                    </div>
+                </div>
+
+                <!-- File Upload Mode -->
+                <div id="fileUploadMode" class="upload-section">
                     <label class="upload-label">Samsung Notes Document</label>
                     <div class="file-input-wrapper">
                         <input type="file" id="notesFile" class="file-input" accept=".docx,.txt">
@@ -430,6 +495,24 @@
                             </div>
                         </label>
                     </div>
+                </div>
+
+                <!-- Text Paste Mode -->
+                <div id="textPasteMode" class="upload-section" style="display: none;">
+                    <label class="upload-label">Plak je opname notities hieronder</label>
+                    <textarea
+                        id="notesText"
+                        class="text-input-area"
+                        placeholder="Plak hier de tekst van je Samsung Notes...
+
+Bijvoorbeeld:
+Hal
+- 10 m2 sauswerk plafond
+- 15 m2 latex muren
+
+Woonkamer
+- 25 m2 behang verwijderen
+- 25 m2 glasvlies plakken"></textarea>
                 </div>
 
                 <button id="generateBtn" class="btn" disabled>GENEREER OFFERTE</button>

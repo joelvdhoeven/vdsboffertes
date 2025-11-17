@@ -5,14 +5,36 @@ const API_BASE_URL = window.API_BASE_URL || 'http://localhost:8000';
 
 let sessionId = null;
 let matches = [];
+let inputMode = 'file'; // 'file' or 'text'
+
+// Input mode toggle
+function setInputMode(mode) {
+    inputMode = mode;
+
+    // Update toggle buttons
+    document.getElementById('toggleFile').classList.toggle('active', mode === 'file');
+    document.getElementById('toggleText').classList.toggle('active', mode === 'text');
+
+    // Show/hide relevant sections
+    document.getElementById('fileUploadMode').style.display = mode === 'file' ? 'block' : 'none';
+    document.getElementById('textPasteMode').style.display = mode === 'text' ? 'block' : 'none';
+
+    // Update button state
+    checkInputReady();
+}
 
 // File input handlers
 document.getElementById('notesFile').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file) {
         updateFileLabel('notesLabel', file.name, true);
-        checkFilesReady();
+        checkInputReady();
     }
+});
+
+// Text input handler
+document.getElementById('notesText').addEventListener('input', function() {
+    checkInputReady();
 });
 
 function updateFileLabel(labelId, fileName, hasFile) {
@@ -29,24 +51,38 @@ function updateFileLabel(labelId, fileName, hasFile) {
     }
 }
 
-function checkFilesReady() {
-    const notesFile = document.getElementById('notesFile').files[0];
+function checkInputReady() {
     const generateBtn = document.getElementById('generateBtn');
 
-    if (notesFile) {
-        generateBtn.disabled = false;
+    if (inputMode === 'file') {
+        const notesFile = document.getElementById('notesFile').files[0];
+        generateBtn.disabled = !notesFile;
+    } else {
+        const notesText = document.getElementById('notesText').value.trim();
+        generateBtn.disabled = notesText.length < 10; // Minimum 10 characters
     }
+}
+
+// Legacy function for backwards compatibility
+function checkFilesReady() {
+    checkInputReady();
 }
 
 // Generate button handler
 document.getElementById('generateBtn').addEventListener('click', async function() {
     try {
-        showProgress(true, 'Uploading bestand...');
+        showProgress(true, 'Verwerken...');
 
-        // Step 1: Upload notes
-        updateProgress(25, 'Uploading opname notities...');
-        const notesFile = document.getElementById('notesFile').files[0];
-        sessionId = await uploadNotes(notesFile);
+        // Step 1: Upload notes (file or text)
+        if (inputMode === 'file') {
+            updateProgress(25, 'Uploading opname notities...');
+            const notesFile = document.getElementById('notesFile').files[0];
+            sessionId = await uploadNotes(notesFile);
+        } else {
+            updateProgress(25, 'Verwerken tekst...');
+            const notesText = document.getElementById('notesText').value;
+            sessionId = await uploadNotesText(notesText);
+        }
 
         // Step 2: Parse documents (using default prijzenboek from admin)
         updateProgress(50, 'Parseren document...');
@@ -104,6 +140,24 @@ async function uploadNotes(file) {
 
     if (!response.ok) {
         throw new Error('Failed to upload notes');
+    }
+
+    const data = await response.json();
+    return data.session_id;
+}
+
+async function uploadNotesText(text) {
+    const response = await fetch(`${API_BASE_URL}/api/upload/notes-text`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ text: text })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to upload text');
     }
 
     const data = await response.json();
