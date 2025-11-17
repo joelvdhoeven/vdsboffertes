@@ -170,6 +170,80 @@
             background: var(--bg-light);
         }
 
+        tr.selected {
+            background: #FFF5F0 !important;
+        }
+
+        /* Pagination Styles */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding: 15px;
+        }
+
+        .pagination button {
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: var(--bg-light);
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination button.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .pagination-info {
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        /* Bulk Actions */
+        .bulk-actions {
+            display: none;
+            background: #FFF5F0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .bulk-actions.visible {
+            display: flex;
+        }
+
+        .bulk-actions .selected-count {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .checkbox-cell {
+            width: 40px;
+            text-align: center;
+        }
+
+        .checkbox-cell input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
         .editable-cell {
             cursor: pointer;
             padding: 8px;
@@ -353,8 +427,21 @@
             <div class="card">
                 <div class="search-bar">
                     <input type="text" id="searchInput" placeholder="Zoek op code of omschrijving..." onkeyup="filterTable()">
+                    <select id="itemsPerPage" onchange="changeItemsPerPage()" style="padding: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
+                        <option value="50">50 per pagina</option>
+                        <option value="100" selected>100 per pagina</option>
+                        <option value="200">200 per pagina</option>
+                        <option value="500">500 per pagina</option>
+                    </select>
                     <button class="btn" onclick="loadPrijzenboek()">🔄 Ververs</button>
                     <button class="btn btn-success" onclick="savePrijzenboek()">💾 Opslaan</button>
+                </div>
+
+                <!-- Bulk Actions Bar -->
+                <div id="bulkActions" class="bulk-actions">
+                    <span class="selected-count"><span id="selectedCount">0</span> items geselecteerd</span>
+                    <button class="btn btn-danger btn-sm" onclick="deleteSelected()">🗑️ Verwijder Geselecteerde</button>
+                    <button class="btn btn-sm" style="background: #95a5a6;" onclick="clearSelection()">✖️ Deselecteer Alles</button>
                 </div>
 
                 <!-- Table -->
@@ -362,6 +449,9 @@
                     <table id="prijzenboekTable">
                         <thead>
                             <tr>
+                                <th class="checkbox-cell">
+                                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll()" title="Selecteer alles op deze pagina">
+                                </th>
                                 <th>Code</th>
                                 <th>Omschrijving</th>
                                 <th>Eenheid</th>
@@ -373,12 +463,24 @@
                         </thead>
                         <tbody id="tableBody">
                             <tr>
-                                <td colspan="7" style="text-align: center; padding: 40px;">
+                                <td colspan="8" style="text-align: center; padding: 40px;">
                                     <p>Laden...</p>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Pagination Controls -->
+                <div id="pagination" class="pagination">
+                    <button onclick="goToPage(1)" title="Eerste pagina">⏮️</button>
+                    <button onclick="goToPage(currentPage - 1)" title="Vorige pagina">◀️</button>
+                    <span class="pagination-info">
+                        Pagina <strong id="currentPageNum">1</strong> van <strong id="totalPages">1</strong>
+                        (<span id="showingRange">0-0</span> van <span id="totalItemsCount">0</span> items)
+                    </span>
+                    <button onclick="goToPage(currentPage + 1)" title="Volgende pagina">▶️</button>
+                    <button onclick="goToPage(totalPages)" title="Laatste pagina">⏭️</button>
                 </div>
             </div>
         </div>
