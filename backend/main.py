@@ -34,10 +34,15 @@ app = FastAPI(title="Offerte Generator API", version="1.0.0")
 # CORS middleware for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origin
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=[
+        "*",  # Allow all origins
+        "https://vdsboffertes-production.up.railway.app",
+        "https://vdsboffertes.vercel.app",
+    ],
+    allow_credentials=False,  # Must be False when using "*" origin
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Storage paths
@@ -436,6 +441,30 @@ async def delete_prijzenboek_item(code: str):
             }
         else:
             raise HTTPException(status_code=404, detail=f"Item {code} not found")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/admin/prijzenboek/clear-all")
+async def clear_all_prijzenboek_items():
+    """Delete ALL items from prijzenboek database"""
+    try:
+        # Import database
+        try:
+            from .database import get_db
+        except ImportError:
+            from database import get_db
+
+        db = get_db()
+        count_before = db.count_items()
+        db.clear_all()
+
+        return {
+            "success": True,
+            "message": f"All {count_before} items deleted from database",
+            "items_deleted": count_before
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
