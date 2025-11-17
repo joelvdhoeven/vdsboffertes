@@ -12,20 +12,23 @@
         }
 
         :root {
-            --bg-primary: #0f0f0f;
-            --bg-secondary: #1a1a1a;
-            --bg-tertiary: #242424;
-            --bg-hover: #2a2a2a;
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #141414;
+            --bg-tertiary: #1e1e1e;
+            --bg-hover: #282828;
             --text-primary: #ffffff;
-            --text-secondary: #a0a0a0;
-            --text-muted: #666666;
-            --accent-primary: #3b82f6;
-            --accent-hover: #2563eb;
-            --accent-success: #10b981;
-            --accent-danger: #ef4444;
-            --accent-warning: #f59e0b;
-            --border-color: #333333;
-            --border-light: #444444;
+            --text-secondary: #b0b0b0;
+            --text-muted: #707070;
+            --accent-primary: #f97316;
+            --accent-hover: #ea580c;
+            --accent-success: #22c55e;
+            --accent-danger: #f43f5e;
+            --accent-warning: #eab308;
+            --border-color: #2a2a2a;
+            --border-light: #3a3a3a;
+            --gradient-primary: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+            --gradient-success: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+            --gradient-danger: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
         }
 
         body {
@@ -43,7 +46,7 @@
 
         /* Sidebar Navigation */
         .sidebar {
-            width: 240px;
+            width: 260px;
             background: var(--bg-secondary);
             border-right: 1px solid var(--border-color);
             position: fixed;
@@ -52,8 +55,9 @@
         }
 
         .logo-section {
-            padding: 24px 20px;
+            padding: 28px 24px;
             border-bottom: 1px solid var(--border-color);
+            background: linear-gradient(180deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
         }
 
         .logo-section h2 {
@@ -64,8 +68,9 @@
         }
 
         .logo-section img {
-            max-height: 40px;
+            max-height: 50px;
             width: auto;
+            filter: brightness(1.1);
         }
 
         .nav-menu {
@@ -73,37 +78,41 @@
         }
 
         .nav-item {
-            padding: 12px 20px;
+            padding: 14px 24px;
             color: var(--text-secondary);
             text-decoration: none;
             display: flex;
             align-items: center;
-            gap: 12px;
-            transition: all 0.15s ease;
+            gap: 14px;
+            transition: all 0.2s ease;
             font-size: 14px;
             font-weight: 500;
             border-left: 3px solid transparent;
+            margin: 4px 0;
         }
 
         .nav-item:hover {
             background: var(--bg-hover);
             color: var(--text-primary);
+            padding-left: 28px;
         }
 
         .nav-item.active {
-            background: var(--bg-tertiary);
+            background: linear-gradient(90deg, rgba(249, 115, 22, 0.2) 0%, transparent 100%);
             border-left-color: var(--accent-primary);
             color: var(--text-primary);
         }
 
         .nav-icon {
-            font-size: 16px;
-            opacity: 0.7;
+            font-size: 15px;
+            opacity: 0.8;
+            width: 20px;
+            text-align: center;
         }
 
         /* Main Content */
         .main-content {
-            margin-left: 240px;
+            margin-left: 260px;
             flex: 1;
             padding: 32px;
             background: var(--bg-primary);
@@ -111,40 +120,46 @@
 
         .header {
             background: var(--bg-secondary);
-            border-radius: 8px;
-            padding: 24px;
+            border-radius: 16px;
+            padding: 28px 32px;
             border: 1px solid var(--border-color);
-            margin-bottom: 24px;
+            margin-bottom: 28px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
         }
 
         .header h1 {
             color: var(--text-primary);
-            font-size: 24px;
-            font-weight: 600;
+            font-size: 26px;
+            font-weight: 700;
             letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #fff 0%, #b0b0b0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .btn {
-            background: var(--accent-primary);
+            background: var(--gradient-primary);
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 11px 22px;
             font-size: 14px;
-            font-weight: 500;
-            border-radius: 6px;
+            font-weight: 600;
+            border-radius: 10px;
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: all 0.2s ease;
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
         }
 
         .btn:hover {
-            background: var(--accent-hover);
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
         }
 
         .btn:active {
@@ -152,50 +167,57 @@
         }
 
         .btn-success {
-            background: var(--accent-success);
+            background: var(--gradient-success);
+            box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
         }
 
         .btn-success:hover {
-            background: #059669;
+            box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
         }
 
         .btn-danger {
-            background: var(--accent-danger);
+            background: var(--gradient-danger);
+            box-shadow: 0 2px 8px rgba(244, 63, 94, 0.3);
         }
 
         .btn-danger:hover {
-            background: #dc2626;
+            box-shadow: 0 6px 20px rgba(244, 63, 94, 0.4);
         }
 
         .btn-secondary {
             background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border-light);
+            box-shadow: none;
         }
 
         .btn-secondary:hover {
             background: var(--bg-hover);
+            border-color: var(--border-light);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
 
         .card {
             background: var(--bg-secondary);
-            border-radius: 8px;
-            padding: 24px;
+            border-radius: 16px;
+            padding: 28px;
             border: 1px solid var(--border-color);
-            margin-bottom: 24px;
+            margin-bottom: 28px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
         }
 
         .card h3 {
             color: var(--text-primary);
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 600;
-            margin-bottom: 16px;
+            margin-bottom: 18px;
         }
 
         /* Table Styles */
         .table-container {
             overflow-x: auto;
-            border-radius: 6px;
+            border-radius: 12px;
             border: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
         }
 
         table {
@@ -205,22 +227,22 @@
         }
 
         th {
-            background: var(--bg-tertiary);
+            background: linear-gradient(180deg, var(--bg-hover) 0%, var(--bg-tertiary) 100%);
             color: var(--text-secondary);
             font-weight: 600;
-            padding: 12px 16px;
+            padding: 14px 16px;
             text-align: left;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-light);
             position: sticky;
             top: 0;
             z-index: 10;
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
         }
 
         td {
-            padding: 12px 16px;
+            padding: 14px 16px;
             border-bottom: 1px solid var(--border-color);
             color: var(--text-primary);
         }
@@ -230,7 +252,8 @@
         }
 
         tr.selected {
-            background: rgba(59, 130, 246, 0.1) !important;
+            background: rgba(249, 115, 22, 0.15) !important;
+            border-left: 3px solid var(--accent-primary);
         }
 
         /* Pagination Styles */
@@ -278,13 +301,13 @@
         /* Bulk Actions */
         .bulk-actions {
             display: none;
-            background: rgba(59, 130, 246, 0.1);
+            background: rgba(249, 115, 22, 0.1);
             padding: 12px 16px;
             border-radius: 6px;
             margin-bottom: 16px;
             align-items: center;
             gap: 16px;
-            border: 1px solid rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(249, 115, 22, 0.2);
         }
 
         .bulk-actions.visible {
@@ -332,7 +355,7 @@
 
         .editable-cell input:focus {
             outline: none;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+            box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.3);
         }
 
         .actions {
@@ -366,7 +389,7 @@
         .search-bar input:focus {
             outline: none;
             border-color: var(--accent-primary);
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+            box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
         }
 
         .search-bar input::placeholder {
@@ -396,26 +419,36 @@
         }
 
         .stat-card {
-            background: var(--bg-secondary);
-            padding: 20px;
-            border-radius: 8px;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            padding: 24px;
+            border-radius: 14px;
             border: 1px solid var(--border-color);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
         }
 
         .stat-number {
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--accent-primary);
-            margin-bottom: 4px;
+            font-size: 36px;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 6px;
             letter-spacing: -1px;
         }
 
         .stat-label {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-secondary);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 500;
+            letter-spacing: 1px;
+            font-weight: 600;
         }
 
         .modal {
@@ -480,7 +513,7 @@
         .form-group input:focus {
             outline: none;
             border-color: var(--accent-primary);
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+            box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
         }
 
         .form-group input::placeholder {
@@ -539,19 +572,20 @@
         <!-- Sidebar Navigation -->
         <nav class="sidebar">
             <div class="logo-section">
-                <h2>VDS Offertes</h2>
+                <img src="assets/logo.png" alt="Van der Speld Bouw" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <h2 style="display: none;">VDS Offertes</h2>
             </div>
             <div class="nav-menu">
                 <a href="index.html" class="nav-item">
-                    <span class="nav-icon">H</span>
+                    <span class="nav-icon">◈</span>
                     <span>Home</span>
                 </a>
                 <a href="admin.html" class="nav-item active">
-                    <span class="nav-icon">P</span>
-                    <span>Prijzenboek Beheer</span>
+                    <span class="nav-icon">◉</span>
+                    <span>Prijzenboek</span>
                 </a>
                 <a href="#" class="nav-item" onclick="alert('Binnenkort beschikbaar')">
-                    <span class="nav-icon">S</span>
+                    <span class="nav-icon">◎</span>
                     <span>Statistieken</span>
                 </a>
             </div>
