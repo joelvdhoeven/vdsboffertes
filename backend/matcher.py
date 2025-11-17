@@ -15,6 +15,49 @@ def normalize_text(text: str) -> str:
     return text
 
 
+# Construction terminology synonyms for better matching
+CONSTRUCTION_SYNONYMS = {
+    # Actions
+    'verwijderen': ['verwijderen', 'slopen', 'afbreken', 'demonteren', 'weghalen'],
+    'vervangen': ['vervangen', 'vernieuwen', 'nieuw', 'plaatsen'],
+    'schilderen': ['schilderen', 'lakken', 'verven', 'gronden', 'aflakken'],
+    'aanbrengen': ['aanbrengen', 'plaatsen', 'monteren', 'bevestigen', 'installeren'],
+    'herstellen': ['herstellen', 'repareren', 'fixen', 'maken'],
+    'egaliseren': ['egaliseren', 'vlak maken', 'stucen'],
+    'stucen': ['stucen', 'pleisteren', 'stukadoren'],
+    'sausen': ['sausen', 'latex', 'witten'],
+
+    # Materials/items
+    'gipsplaten': ['gipsplaten', 'gipsplaat', 'gips', 'gipsblok'],
+    'behang': ['behang', 'behangwerk', 'wandbekleding'],
+    'radiator': ['radiator', 'verwarming', 'radiatoren', 'cv'],
+    'kozijn': ['kozijn', 'raamkozijn', 'deurkozijn', 'buitenkozijn', 'binnenkozijn'],
+    'deur': ['deur', 'opdekdeur', 'binnendeur', 'opdek'],
+    'raam': ['raam', 'ramen', 'venster', 'glas'],
+    'plafond': ['plafond', 'plafonds'],
+    'vloer': ['vloer', 'vloeren'],
+    'wand': ['wand', 'wanden', 'muur', 'muren', 'binnenwand'],
+    'tegelwerk': ['tegelwerk', 'tegels', 'tegel', 'betegelen'],
+    'leidingen': ['leidingen', 'leiding', 'buizen', 'pijpen'],
+    'vensterbank': ['vensterbank', 'raambank'],
+    'dakbeschot': ['dakbeschot', 'dakbeschotting', 'dakplaat'],
+    'plinten': ['plinten', 'plint', 'vloerplint'],
+}
+
+
+def expand_with_synonyms(text: str) -> str:
+    """Expand text with construction synonyms for better matching"""
+    words = text.lower().split()
+    expanded_words = set(words)
+
+    for word in words:
+        for key, synonyms in CONSTRUCTION_SYNONYMS.items():
+            if word in synonyms or word == key:
+                expanded_words.update(synonyms)
+
+    return " ".join(expanded_words)
+
+
 def normalize_unit(unit: str) -> str:
     """Normalize unit names"""
     unit = unit.lower().strip()
@@ -46,10 +89,43 @@ def normalize_unit(unit: str) -> str:
     return unit_map.get(unit, unit)
 
 
+def calculate_keyword_score(query: str, target: str) -> float:
+    """
+    Calculate keyword match score between two strings
+    Returns score 0.0 to 1.0 based on how many important words match
+    Uses construction synonym expansion for better matching
+    """
+    # Expand with synonyms for construction terms
+    query_expanded = expand_with_synonyms(query)
+    target_expanded = expand_with_synonyms(target)
+
+    query_words = set(query_expanded.split())
+    target_words = set(target_expanded.split())
+
+    # Remove common stop words
+    stop_words = {'de', 'het', 'een', 'en', 'in', 'op', 'van', 'te', 'met', 'voor', 'inclusief', 'incl', 'per', 'stuk'}
+    query_words = query_words - stop_words
+    target_words = target_words - stop_words
+
+    if not query_words or not target_words:
+        return 0.0
+
+    # Count matching words
+    matching_words = query_words & target_words
+
+    # Score based on percentage of query words found in target
+    query_match_ratio = len(matching_words) / len(query_words) if query_words else 0
+    # Also consider how much of target is covered
+    target_match_ratio = len(matching_words) / len(target_words) if target_words else 0
+
+    # Weighted average (favor query coverage)
+    return (query_match_ratio * 0.7) + (target_match_ratio * 0.3)
+
+
 def calculate_fuzzy_score(query: str, target: str) -> float:
     """
     Calculate fuzzy match score between two strings
-    Uses Levenshtein ratio
+    Uses combination of Levenshtein ratio and keyword matching
     Returns score 0.0 to 1.0
     """
     query_norm = normalize_text(query)
@@ -59,13 +135,20 @@ def calculate_fuzzy_score(query: str, target: str) -> float:
     if query_norm == target_norm:
         return 1.0
 
-    # Substring match bonus
-    if query_norm in target_norm or target_norm in query_norm:
-        base_score = ratio(query_norm, target_norm)
-        return min(1.0, base_score + 0.1)  # Boost by 10% for substring match
+    # Calculate different scores
+    levenshtein_score = ratio(query_norm, target_norm)
+    keyword_score = calculate_keyword_score(query, target)
 
-    # Regular Levenshtein ratio
-    return ratio(query_norm, target_norm)
+    # Substring match bonus
+    substring_bonus = 0.0
+    if query_norm in target_norm or target_norm in query_norm:
+        substring_bonus = 0.15
+
+    # Use the best of Levenshtein or keyword matching, plus substring bonus
+    # Keyword matching is often better for construction terms
+    best_score = max(levenshtein_score, keyword_score * 1.2)  # Boost keyword matching
+
+    return min(1.0, best_score + substring_bonus)
 
 
 def calculate_unit_score(opname_unit: str, prijzenboek_unit: str) -> float:
