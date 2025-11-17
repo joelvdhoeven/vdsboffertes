@@ -35,3 +35,8 @@ uploads/
 # Database
 *.db
 !backend/prijzenboek.db
+
+# Environment
+.env
+*.env
+!.env.example

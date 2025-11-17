@@ -412,9 +412,37 @@
                     <button class="btn" onclick="saveDisplaySettings()">💾 Weergave Opslaan</button>
                 </div>
             </div>
+
+            <!-- AI Matching Settings -->
+            <div class="card">
+                <h2>🤖 AI Matching Instellingen</h2>
+
+                <div class="setting-group">
+                    <label class="setting-label">AI Status</label>
+                    <p class="setting-description">Huidige status van AI matching</p>
+                    <div id="aiStatus" style="padding: 10px; background: var(--bg-light); border-radius: 6px; font-size: 14px;">
+                        Laden...
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Geleerde Correcties</label>
+                    <p class="setting-description">Statistieken over geleerde correcties</p>
+                    <div id="correctionsStats" style="padding: 10px; background: var(--bg-light); border-radius: 6px; font-size: 14px;">
+                        Laden...
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn" onclick="refreshAIStatus()">🔄 Status Vernieuwen</button>
+                    <button class="btn btn-secondary" onclick="clearAICache()">🗑️ Cache Wissen</button>
+                    <button class="btn btn-secondary" onclick="exportCorrections()">📥 Exporteer Correcties</button>
+                </div>
+            </div>
         </div>
     </div>
 
+    <script src="config.js"></script>
     <script>
         // Default room configuration
         const defaultRooms = {
@@ -438,6 +466,8 @@
             loadRoomSettings();
             loadPriceSettings();
             loadDisplaySettings();
+            refreshAIStatus();
+            loadCorrectionsStats();
         });
 
         function loadRoomSettings() {
@@ -534,6 +564,109 @@
             setTimeout(() => {
                 statusDiv.className = 'status-message';
             }, 3000);
+        }
+
+        // AI Matching Functions
+        async function refreshAIStatus() {
+            const statusDiv = document.getElementById('aiStatus');
+            statusDiv.innerHTML = 'Laden...';
+
+            try {
+                const response = await fetch(`${window.API_BASE_URL}/api/ai/config`);
+                if (!response.ok) throw new Error('Failed to fetch AI config');
+
+                const data = await response.json();
+                const config = data.config || {};
+                const stats = data.stats || {};
+
+                let statusHtml = `
+                    <div style="display: grid; gap: 8px;">
+                        <div><strong>AI Matching:</strong> ${config.ai_matching_enabled ? '✅ Ingeschakeld' : '❌ Uitgeschakeld'}</div>
+                        <div><strong>API Beschikbaar:</strong> ${config.ai_available ? '✅ Ja' : '❌ Nee (API key niet geconfigureerd)'}</div>
+                        <div><strong>Model:</strong> ${config.ai_model || 'Niet ingesteld'}</div>
+                        <div><strong>Confidence Drempel:</strong> ${((config.ai_confidence_threshold || 0.7) * 100).toFixed(0)}%</div>
+                        <div><strong>Cache Items:</strong> ${stats.cache_size || 0}</div>
+                        <div><strong>Learning:</strong> ${config.learning_enabled ? '✅ Ingeschakeld' : '❌ Uitgeschakeld'}</div>
+                    </div>
+                `;
+                statusDiv.innerHTML = statusHtml;
+            } catch (error) {
+                statusDiv.innerHTML = `<span style="color: #dc3545;">❌ Fout bij laden: ${error.message}</span>`;
+            }
+        }
+
+        async function loadCorrectionsStats() {
+            const statsDiv = document.getElementById('correctionsStats');
+            statsDiv.innerHTML = 'Laden...';
+
+            try {
+                const response = await fetch(`${window.API_BASE_URL}/api/corrections/stats`);
+                if (!response.ok) throw new Error('Failed to fetch corrections stats');
+
+                const stats = await response.json();
+
+                // Get most corrected item if available
+                let mostCorrected = 'Geen data';
+                if (stats.top_corrections && stats.top_corrections.length > 0) {
+                    const top = stats.top_corrections[0];
+                    mostCorrected = `${top.opname_text} (${top.frequency}x)`;
+                }
+
+                let statsHtml = `
+                    <div style="display: grid; gap: 8px;">
+                        <div><strong>Totaal Correcties:</strong> ${stats.total_corrections || 0}</div>
+                        <div><strong>Totaal Keer Gebruikt:</strong> ${stats.total_uses || 0}</div>
+                        <div><strong>Meest Gecorrigeerd:</strong> ${mostCorrected}</div>
+                        <div><strong>AI Feedback:</strong> ${stats.ai_feedback?.total_suggestions || 0} suggesties (${stats.ai_feedback?.acceptance_rate?.toFixed(0) || 0}% geaccepteerd)</div>
+                    </div>
+                `;
+                statsDiv.innerHTML = statsHtml;
+            } catch (error) {
+                statsDiv.innerHTML = `<span style="color: #dc3545;">❌ Fout bij laden: ${error.message}</span>`;
+            }
+        }
+
+        async function clearAICache() {
+            if (!confirm('Weet je zeker dat je de AI cache wilt wissen? Dit kan leiden tot hogere kosten bij volgende matches.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${window.API_BASE_URL}/api/ai/clear-cache`, {
+                    method: 'POST'
+                });
+                if (!response.ok) throw new Error('Failed to clear cache');
+
+                const result = await response.json();
+                showStatus(`Cache gewist. ${result.cleared_items || 0} items verwijderd.`, 'success');
+                refreshAIStatus();
+            } catch (error) {
+                showStatus(`Fout bij wissen cache: ${error.message}`, 'error');
+            }
+        }
+
+        async function exportCorrections() {
+            try {
+                const response = await fetch(`${window.API_BASE_URL}/api/corrections/export`);
+                if (!response.ok) throw new Error('Failed to export corrections');
+
+                const data = await response.json();
+
+                // Create and download JSON file
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `corrections_export_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                showStatus(`${data.corrections?.length || 0} correcties geëxporteerd`, 'success');
+            } catch (error) {
+                showStatus(`Fout bij exporteren: ${error.message}`, 'error');
+            }
         }
     </script>
 </body>

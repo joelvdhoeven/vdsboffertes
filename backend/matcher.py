@@ -1,10 +1,30 @@
 """
 Fuzzy matching engine for werkzaamheden
 Matches opname werkzaamheden with prijzenboek items
+Supports AI-enhanced matching and learning from corrections
 """
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from Levenshtein import ratio
 import uuid
+import asyncio
+
+# Import AI and corrections modules (optional dependencies)
+try:
+    from .config import config
+    from .ai_matcher import ai_semantic_match
+    from .corrections_db import get_corrections_db
+    AI_MODULES_AVAILABLE = True
+except ImportError:
+    try:
+        from config import config
+        from ai_matcher import ai_semantic_match
+        from corrections_db import get_corrections_db
+        AI_MODULES_AVAILABLE = True
+    except ImportError:
+        AI_MODULES_AVAILABLE = False
+        config = None
+        ai_semantic_match = None
+        get_corrections_db = None
 
 
 def normalize_text(text: str) -> str:
@@ -225,26 +245,176 @@ def find_best_matches(
     return matches[:top_n]
 
 
-def match_werkzaamheden(
-    parsed_opname: Dict[str, Any],
+def check_learned_correction(
+    werkzaamheid: Dict[str, Any],
     prijzenboek: List[Dict[str, Any]]
+) -> Optional[Dict[str, Any]]:
+    """
+    Check if we have a learned correction for this werkzaamheid
+
+    Returns:
+        prijzenboek item if found, None otherwise
+    """
+    if not AI_MODULES_AVAILABLE or not config or not config.LEARNING_ENABLED:
+        return None
+
+    corrections_db = get_corrections_db()
+    learned = corrections_db.find_learned_match(
+        werkzaamheid.get("omschrijving", ""),
+        werkzaamheid.get("eenheid", ""),
+        min_frequency=config.MIN_CORRECTION_FREQUENCY
+    )
+
+    if learned:
+        # Find the corresponding prijzenboek item
+        for item in prijzenboek:
+            if item.get("code") == learned["code"]:
+                return item
+
+    return None
+
+
+async def apply_ai_matching(
+    werkzaamheid: Dict[str, Any],
+    candidates: List[tuple]
+) -> Optional[Dict[str, Any]]:
+    """
+    Apply AI semantic matching to re-rank candidates
+
+    Args:
+        werkzaamheid: The work item to match
+        candidates: List of (item, score, text_score, unit_score) tuples
+
+    Returns:
+        Dict with ai_result if successful, None otherwise
+    """
+    if not AI_MODULES_AVAILABLE or not config or not config.is_ai_available():
+        return None
+
+    if len(candidates) < 2:
+        return None
+
+    # Prepare candidates for AI matching
+    candidate_items = [item for item, _, _, _ in candidates]
+
+    try:
+        ai_result = await ai_semantic_match(werkzaamheid, candidate_items)
+        return ai_result
+    except Exception as e:
+        print(f"AI matching failed: {e}")
+        return None
+
+
+async def match_werkzaamheden(
+    parsed_opname: Dict[str, Any],
+    prijzenboek: List[Dict[str, Any]],
+    use_ai: bool = False,  # AI is now OFF by default - use on-demand instead
+    use_learning: bool = True
 ) -> List[Dict[str, Any]]:
     """
     Match all werkzaamheden from opname with prijzenboek
-    Returns list of match results
+    Supports AI-enhanced matching and learning from corrections
+
+    Args:
+        parsed_opname: Parsed opname document
+        prijzenboek: List of prijzenboek items
+        use_ai: Whether to use AI matching (if available)
+        use_learning: Whether to use learned corrections
+
+    Returns:
+        List of match results
     """
     all_matches = []
 
+    # Check if we should use AI matching
+    ai_enabled = (
+        use_ai and
+        AI_MODULES_AVAILABLE and
+        config is not None and
+        config.is_ai_available()
+    )
+
+    # Check if we should use learning
+    learning_enabled = (
+        use_learning and
+        AI_MODULES_AVAILABLE and
+        config is not None and
+        config.LEARNING_ENABLED
+    )
+
     for ruimte in parsed_opname["ruimtes"]:
         for werkzaamheid in ruimte["werkzaamheden"]:
-            # Find best matches
-            best_matches = find_best_matches(werkzaamheid, prijzenboek, top_n=5)
+            match_type = "fuzzy"
+            ai_reasoning = None
+
+            # Step 1: Check for learned corrections first
+            if learning_enabled:
+                learned_item = check_learned_correction(werkzaamheid, prijzenboek)
+                if learned_item:
+                    # Use learned match with 100% confidence
+                    match_result = {
+                        "id": str(uuid.uuid4()),
+                        "ruimte": ruimte["naam"],
+                        "opname_item": {
+                            "omschrijving": werkzaamheid["omschrijving"],
+                            "hoeveelheid": werkzaamheid["hoeveelheid"],
+                            "eenheid": werkzaamheid["eenheid"],
+                            "raw_text": werkzaamheid.get("raw_text", "")
+                        },
+                        "prijzenboek_match": {
+                            "code": learned_item["code"],
+                            "omschrijving": learned_item["omschrijving"],
+                            "omschrijving_offerte": learned_item.get("omschrijving_offerte", learned_item["omschrijving"]),
+                            "eenheid": learned_item["eenheid"],
+                            "materiaal": learned_item.get("materiaal", 0),
+                            "uren": learned_item.get("uren", 0),
+                            "prijs_per_stuk": learned_item.get("prijs_per_stuk", 0),
+                            "prijs_excl": learned_item.get("totaal_excl", learned_item.get("prijs_per_stuk", 0)),
+                            "prijs_incl": learned_item.get("totaal_incl", 0),
+                            "row_num": learned_item.get("row_num", None)
+                        },
+                        "confidence": 1.0,
+                        "text_score": 1.0,
+                        "unit_score": 1.0,
+                        "match_type": "learned",
+                        "ai_reasoning": "Match gebaseerd op eerdere gebruikerscorrecties",
+                        "status": "auto",
+                        "alternatives": []
+                    }
+                    all_matches.append(match_result)
+                    continue
+
+            # Step 2: Find best fuzzy matches
+            best_matches = find_best_matches(
+                werkzaamheid,
+                prijzenboek,
+                top_n=config.MAX_CANDIDATES_FOR_AI if ai_enabled and config else 10
+            )
 
             if not best_matches:
                 continue
 
-            # Take the best match
+            # Step 3: Apply AI matching if enabled and confidence is not high enough
             best_item, confidence, text_score, unit_score = best_matches[0]
+
+            if ai_enabled and confidence < 0.95 and len(best_matches) > 1:
+                # Try AI matching for better results
+                try:
+                    ai_result = await apply_ai_matching(werkzaamheid, best_matches)
+                    if ai_result and ai_result.get("confidence", 0) >= config.AI_CONFIDENCE_THRESHOLD:
+                        # Use AI's choice
+                        ai_index = ai_result["best_match_index"]
+                        if 0 <= ai_index < len(best_matches):
+                            best_item, _, text_score, unit_score = best_matches[ai_index]
+                            confidence = ai_result["confidence"]
+                            match_type = "ai_semantic"
+                            ai_reasoning = ai_result.get("reasoning", "")
+
+                            # Reorder best_matches to put AI choice first
+                            ai_choice = best_matches.pop(ai_index)
+                            best_matches.insert(0, ai_choice)
+                except Exception as e:
+                    print(f"AI matching error for {werkzaamheid.get('omschrijving', '')}: {e}")
 
             # Get alternative matches for user review
             alternatives = [
@@ -252,11 +422,11 @@ def match_werkzaamheden(
                     "code": item["code"],
                     "omschrijving": item["omschrijving"],
                     "eenheid": item["eenheid"],
-                    "prijs_excl": item["totaal_excl"],
-                    "prijs_incl": item["totaal_incl"],
+                    "prijs_excl": item.get("totaal_excl", item.get("prijs_per_stuk", 0)),
+                    "prijs_incl": item.get("totaal_incl", 0),
                     "score": score
                 }
-                for item, score, _, _ in best_matches[1:top_n]
+                for item, score, _, _ in best_matches[1:5]
             ]
 
             match_result = {
@@ -283,7 +453,8 @@ def match_werkzaamheden(
                 "confidence": round(confidence, 3),
                 "text_score": round(text_score, 3),
                 "unit_score": round(unit_score, 3),
-                "match_type": "fuzzy",
+                "match_type": match_type,
+                "ai_reasoning": ai_reasoning,
                 "status": "auto" if confidence >= 0.9 else "review",
                 "alternatives": alternatives
             }

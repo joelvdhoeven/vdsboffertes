@@ -250,7 +250,7 @@ async def process_match(session_id: str):
             raise HTTPException(status_code=400, detail="Documents not parsed yet")
 
         # Perform matching
-        matches = match_werkzaamheden(
+        matches = await match_werkzaamheden(
             session["parsed_opname"],
             session["prijzenboek_data"]
         )
@@ -513,6 +513,356 @@ async def clear_all_prijzenboek_items():
             "items_deleted": count_before
         }
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# AI Matching and Learning endpoints
+@app.get("/api/ai/config")
+async def get_ai_config():
+    """Get AI matching configuration"""
+    try:
+        try:
+            from .config import config
+            from .ai_matcher import get_ai_stats
+        except ImportError:
+            from config import config
+            from ai_matcher import get_ai_stats
+
+        return {
+            "config": config.to_dict(),
+            "stats": get_ai_stats()
+        }
+    except ImportError:
+        return {
+            "config": {
+                "ai_available": False,
+                "message": "AI modules not available"
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/ai/clear-cache")
+async def clear_ai_cache():
+    """Clear AI response cache"""
+    try:
+        try:
+            from .ai_matcher import clear_cache
+        except ImportError:
+            from ai_matcher import clear_cache
+
+        clear_cache()
+        return {"success": True, "message": "AI cache cleared"}
+    except ImportError:
+        return {"success": False, "message": "AI modules not available"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class CorrectionRequest(BaseModel):
+    """Model for correction request"""
+    opname_text: str
+    opname_eenheid: str
+    chosen_code: str
+    chosen_omschrijving: str = ""
+    original_code: str = ""
+    original_omschrijving: str = ""
+
+
+@app.post("/api/corrections/add")
+async def add_correction(correction: CorrectionRequest):
+    """Add a user correction for learning"""
+    try:
+        try:
+            from .corrections_db import get_corrections_db
+        except ImportError:
+            from corrections_db import get_corrections_db
+
+        db = get_corrections_db()
+        result = db.add_correction(
+            opname_text=correction.opname_text,
+            opname_eenheid=correction.opname_eenheid,
+            chosen_code=correction.chosen_code,
+            chosen_omschrijving=correction.chosen_omschrijving,
+            original_code=correction.original_code,
+            original_omschrijving=correction.original_omschrijving
+        )
+
+        return {
+            "success": True,
+            "action": result,
+            "message": f"Correction {result} for '{correction.opname_text}'"
+        }
+    except ImportError:
+        return {"success": False, "message": "Corrections module not available"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/corrections/stats")
+async def get_corrections_stats():
+    """Get statistics about learned corrections"""
+    try:
+        try:
+            from .corrections_db import get_corrections_db
+        except ImportError:
+            from corrections_db import get_corrections_db
+
+        db = get_corrections_db()
+        stats = db.get_statistics()
+
+        return stats
+    except ImportError:
+        return {
+            "total_corrections": 0,
+            "message": "Corrections module not available"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/corrections/export")
+async def export_corrections():
+    """Export all corrections for backup"""
+    try:
+        try:
+            from .corrections_db import get_corrections_db
+        except ImportError:
+            from corrections_db import get_corrections_db
+
+        db = get_corrections_db()
+        corrections = db.export_corrections()
+
+        return {
+            "corrections": corrections,
+            "total": len(corrections)
+        }
+    except ImportError:
+        return {"corrections": [], "message": "Corrections module not available"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/corrections/clear")
+async def clear_corrections():
+    """Clear all corrections (use with caution)"""
+    try:
+        try:
+            from .corrections_db import get_corrections_db
+        except ImportError:
+            from corrections_db import get_corrections_db
+
+        db = get_corrections_db()
+        db.clear_all()
+
+        return {"success": True, "message": "All corrections cleared"}
+    except ImportError:
+        return {"success": False, "message": "Corrections module not available"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/matches/{match_id}/ai-suggest")
+async def ai_suggest_match(match_id: str, session_id: str):
+    """
+    Request AI suggestion for a specific match (on-demand AI matching)
+    This is more cost-effective than automatic AI matching for all items
+    """
+    try:
+        # Validate session
+        if session_id not in sessions:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        session = sessions[session_id]
+
+        if not session["matches"]:
+            raise HTTPException(status_code=400, detail="No matches found")
+
+        # Find the match
+        target_match = None
+        for match in session["matches"]:
+            if match["id"] == match_id:
+                target_match = match
+                break
+
+        if not target_match:
+            raise HTTPException(status_code=404, detail="Match not found")
+
+        # Import AI matching modules
+        try:
+            from config import config
+            from matcher import find_best_matches, apply_ai_matching
+        except ImportError:
+            raise HTTPException(status_code=500, detail="AI modules not available")
+
+        if not config.is_ai_available():
+            raise HTTPException(status_code=400, detail="AI matching not configured (missing API key)")
+
+        # Create werkzaamheid object from match
+        werkzaamheid = {
+            "omschrijving": target_match["opname_item"]["omschrijving"],
+            "hoeveelheid": target_match["opname_item"]["hoeveelheid"],
+            "eenheid": target_match["opname_item"]["eenheid"]
+        }
+
+        # Get top candidates for AI
+        best_matches = find_best_matches(
+            werkzaamheid,
+            session["prijzenboek_data"],
+            top_n=config.MAX_CANDIDATES_FOR_AI
+        )
+
+        if not best_matches:
+            raise HTTPException(status_code=400, detail="No candidates found for AI matching")
+
+        # Call AI for suggestion
+        ai_result = await apply_ai_matching(werkzaamheid, best_matches)
+
+        if not ai_result:
+            raise HTTPException(status_code=500, detail="AI matching failed - no response")
+
+        # Get the AI's suggested item
+        ai_index = ai_result.get("best_match_index", 0)
+        if ai_index < 0 or ai_index >= len(best_matches):
+            ai_index = 0
+
+        suggested_item, suggested_score, _, _ = best_matches[ai_index]
+
+        return {
+            "success": True,
+            "match_id": match_id,
+            "ai_suggestion": {
+                "code": suggested_item["code"],
+                "omschrijving": suggested_item["omschrijving"],
+                "eenheid": suggested_item["eenheid"],
+                "prijs_per_stuk": suggested_item.get("prijs_per_stuk", 0),
+                "confidence": ai_result.get("confidence", 0),
+                "reasoning": ai_result.get("reasoning", "")
+            },
+            "current_match": {
+                "code": target_match["prijzenboek_match"]["code"],
+                "omschrijving": target_match["prijzenboek_match"]["omschrijving"]
+            },
+            "alternatives": [
+                {
+                    "code": item["code"],
+                    "omschrijving": item["omschrijving"],
+                    "eenheid": item["eenheid"],
+                    "score": score
+                }
+                for item, score, _, _ in best_matches[:5]
+            ]
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        raise HTTPException(status_code=500, detail=f"AI suggestion failed: {str(e)}\n{traceback.format_exc()}")
+
+
+@app.post("/api/matches/{match_id}/correct")
+async def correct_match(
+    match_id: str,
+    session_id: str,
+    new_code: str,
+    save_correction: bool = True
+):
+    """
+    Correct a match and optionally save the correction for learning
+
+    Args:
+        match_id: ID of the match to correct
+        session_id: Session ID
+        new_code: New prijzenboek code to use
+        save_correction: Whether to save this correction for future learning
+    """
+    try:
+        # Validate session
+        if session_id not in sessions:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        session = sessions[session_id]
+
+        if not session["matches"]:
+            raise HTTPException(status_code=400, detail="No matches found")
+
+        # Find the match
+        target_match = None
+        for match in session["matches"]:
+            if match["id"] == match_id:
+                target_match = match
+                break
+
+        if not target_match:
+            raise HTTPException(status_code=404, detail="Match not found")
+
+        # Find the new prijzenboek item
+        new_item = None
+        for item in session["prijzenboek_data"]:
+            if item["code"] == new_code:
+                new_item = item
+                break
+
+        if not new_item:
+            raise HTTPException(status_code=404, detail="Prijzenboek item not found")
+
+        # Save original for correction learning
+        original_code = target_match["prijzenboek_match"]["code"]
+        original_omschrijving = target_match["prijzenboek_match"]["omschrijving"]
+        opname_text = target_match["opname_item"]["omschrijving"]
+        opname_eenheid = target_match["opname_item"]["eenheid"]
+
+        # Update the match
+        target_match["prijzenboek_match"] = {
+            "code": new_item["code"],
+            "omschrijving": new_item["omschrijving"],
+            "omschrijving_offerte": new_item.get("omschrijving_offerte", new_item["omschrijving"]),
+            "eenheid": new_item["eenheid"],
+            "materiaal": new_item.get("materiaal", 0),
+            "uren": new_item.get("uren", 0),
+            "prijs_per_stuk": new_item.get("prijs_per_stuk", 0),
+            "prijs_excl": new_item.get("totaal_excl", new_item.get("prijs_per_stuk", 0)),
+            "prijs_incl": new_item.get("totaal_incl", 0),
+            "row_num": new_item.get("row_num", None)
+        }
+        target_match["confidence"] = 1.0
+        target_match["match_type"] = "manual"
+        target_match["status"] = "auto"
+
+        # Save correction for learning if requested
+        correction_saved = False
+        if save_correction:
+            try:
+                try:
+                    from .corrections_db import get_corrections_db
+                except ImportError:
+                    from corrections_db import get_corrections_db
+
+                db = get_corrections_db()
+                db.add_correction(
+                    opname_text=opname_text,
+                    opname_eenheid=opname_eenheid,
+                    chosen_code=new_code,
+                    chosen_omschrijving=new_item["omschrijving"],
+                    original_code=original_code,
+                    original_omschrijving=original_omschrijving
+                )
+                correction_saved = True
+            except Exception as e:
+                print(f"Failed to save correction: {e}")
+
+        return {
+            "success": True,
+            "match": target_match,
+            "correction_saved": correction_saved,
+            "message": f"Match updated to {new_code}"
+        }
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -261,6 +261,10 @@ function displayMatches(matchResult) {
     document.getElementById('uploadSection').style.display = 'none';
     document.getElementById('matchesSection').style.display = 'block';
 
+    // Count match types
+    const aiMatches = matches.filter(m => m.match_type === 'ai_semantic').length;
+    const learnedMatches = matches.filter(m => m.match_type === 'learned').length;
+
     // Display statistics
     const statsHtml = `
         <div class="stat-card">
@@ -275,6 +279,18 @@ function displayMatches(matchResult) {
             <div class="stat-number">${matchResult.medium_confidence + matchResult.low_confidence}</div>
             <div class="stat-label">Review Nodig</div>
         </div>
+        ${aiMatches > 0 ? `
+        <div class="stat-card">
+            <div class="stat-number">${aiMatches}</div>
+            <div class="stat-label">AI Matches</div>
+        </div>
+        ` : ''}
+        ${learnedMatches > 0 ? `
+        <div class="stat-card">
+            <div class="stat-number">${learnedMatches}</div>
+            <div class="stat-label">Geleerd</div>
+        </div>
+        ` : ''}
     `;
     document.getElementById('stats').innerHTML = statsHtml;
 
@@ -288,9 +304,60 @@ function displayMatches(matchResult) {
                                match.confidence >= 0.7 ? 'Medium' :
                                'Lage zekerheid';
 
+        // Match type badge
+        let matchTypeBadge = '';
+        if (match.match_type === 'ai_semantic') {
+            matchTypeBadge = '<span class="match-type-badge ai-badge">AI</span>';
+        } else if (match.match_type === 'learned') {
+            matchTypeBadge = '<span class="match-type-badge learned-badge">Geleerd</span>';
+        } else if (match.match_type === 'manual') {
+            matchTypeBadge = '<span class="match-type-badge manual-badge">Handmatig</span>';
+        }
+
+        // AI reasoning display
+        let aiReasoningHtml = '';
+        if (match.ai_reasoning) {
+            aiReasoningHtml = `
+                <div class="ai-reasoning">
+                    <div class="ai-reasoning-label">AI Uitleg:</div>
+                    <div class="ai-reasoning-text">${match.ai_reasoning}</div>
+                </div>
+            `;
+        }
+
+        // Alternatives dropdown for corrections
+        let alternativesHtml = '';
+        if (match.alternatives && match.alternatives.length > 0) {
+            const alternativeOptions = match.alternatives.map(alt =>
+                `<option value="${alt.code}">${alt.omschrijving} (${(alt.score * 100).toFixed(0)}%)</option>`
+            ).join('');
+
+            alternativesHtml = `
+                <div class="alternatives-section">
+                    <select class="alternative-select" id="alt_${match.id}" onchange="selectAlternative('${match.id}', this.value)">
+                        <option value="">-- Kies andere match --</option>
+                        ${alternativeOptions}
+                    </select>
+                </div>
+            `;
+        }
+
+        // AI suggestion button (only show if confidence < 95% and not already AI matched)
+        let aiButtonHtml = '';
+        if (match.match_type !== 'ai_semantic' && match.confidence < 0.95) {
+            aiButtonHtml = `
+                <button class="btn-ai-suggest" onclick="requestAISuggestion('${match.id}')" id="ai_btn_${match.id}">
+                    🤖 Vraag AI
+                </button>
+            `;
+        }
+
         return `
-            <div class="match-item">
-                <div class="match-header">${match.ruimte}</div>
+            <div class="match-item" data-match-id="${match.id}">
+                <div class="match-header">
+                    ${match.ruimte}
+                    ${matchTypeBadge}
+                </div>
                 <div class="match-content">
                     <div class="match-row">
                         <div class="match-text">
@@ -304,16 +371,21 @@ function displayMatches(matchResult) {
                     <div class="match-row">
                         <div class="match-text">
                             <div class="match-label">Prijzenboek Match</div>
-                            <div class="match-value">
+                            <div class="match-value" id="match_value_${match.id}">
                                 ${match.prijzenboek_match.omschrijving} (${match.prijzenboek_match.eenheid})
                             </div>
-                            <div class="match-label" style="margin-top: 5px;">
+                            <div class="match-label" style="margin-top: 5px;" id="match_code_${match.id}">
                                 Code: ${match.prijzenboek_match.code} | €${match.prijzenboek_match.prijs_excl.toFixed(2)} excl. BTW
                             </div>
                         </div>
-                        <span class="confidence-badge ${confidenceClass}">
+                        <span class="confidence-badge ${confidenceClass}" id="conf_${match.id}">
                             ${(match.confidence * 100).toFixed(0)}% - ${confidenceLabel}
                         </span>
+                    </div>
+                    ${aiReasoningHtml}
+                    <div class="match-actions">
+                        ${alternativesHtml}
+                        ${aiButtonHtml}
                     </div>
                 </div>
             </div>
@@ -321,4 +393,127 @@ function displayMatches(matchResult) {
     }).join('');
 
     document.getElementById('matchesList').innerHTML = matchesHtml;
+}
+
+// Request AI suggestion for a specific match
+async function requestAISuggestion(matchId) {
+    const btn = document.getElementById(`ai_btn_${matchId}`);
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '⏳ Laden...';
+    btn.disabled = true;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/matches/${matchId}/ai-suggest?session_id=${sessionId}`, {
+            method: 'POST'
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'AI suggestion failed');
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Show AI suggestion to user
+            const suggestion = result.ai_suggestion;
+            const currentMatch = result.current_match;
+
+            const accept = confirm(
+                `AI Suggestie (${(suggestion.confidence * 100).toFixed(0)}% zekerheid):\n\n` +
+                `${suggestion.omschrijving}\n` +
+                `Code: ${suggestion.code}\n` +
+                `Prijs: €${suggestion.prijs_per_stuk.toFixed(2)}\n\n` +
+                `Reden: ${suggestion.reasoning}\n\n` +
+                `Huidige match: ${currentMatch.omschrijving}\n\n` +
+                `Wil je de AI suggestie accepteren?`
+            );
+
+            if (accept) {
+                // Apply AI suggestion
+                await selectAlternative(matchId, suggestion.code);
+
+                // Update the match to show AI reasoning
+                const matchElement = document.querySelector(`[data-match-id="${matchId}"]`);
+                if (matchElement) {
+                    const existingReasoning = matchElement.querySelector('.ai-reasoning');
+                    if (!existingReasoning) {
+                        const matchContent = matchElement.querySelector('.match-content');
+                        const reasoningHtml = `
+                            <div class="ai-reasoning">
+                                <div class="ai-reasoning-label">AI Uitleg:</div>
+                                <div class="ai-reasoning-text">${suggestion.reasoning}</div>
+                            </div>
+                        `;
+                        matchContent.insertAdjacentHTML('beforeend', reasoningHtml);
+                    }
+                }
+            }
+        }
+
+        btn.innerHTML = '✅ AI Gevraagd';
+        btn.disabled = true;
+
+    } catch (error) {
+        console.error('AI suggestion error:', error);
+        alert('Fout bij AI suggestie: ' + error.message);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+// Select an alternative match and save correction
+async function selectAlternative(matchId, newCode) {
+    if (!newCode) return;
+
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/api/matches/${matchId}/correct?session_id=${sessionId}&new_code=${newCode}&save_correction=true`,
+            { method: 'POST' }
+        );
+
+        if (!response.ok) {
+            throw new Error('Failed to update match');
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Update the UI
+            const match = result.match;
+            document.getElementById(`match_value_${matchId}`).innerHTML =
+                `${match.prijzenboek_match.omschrijving} (${match.prijzenboek_match.eenheid})`;
+            document.getElementById(`match_code_${matchId}`).innerHTML =
+                `Code: ${match.prijzenboek_match.code} | €${match.prijzenboek_match.prijs_excl.toFixed(2)} excl. BTW`;
+
+            // Update confidence badge
+            const confBadge = document.getElementById(`conf_${matchId}`);
+            confBadge.className = 'confidence-badge confidence-high';
+            confBadge.innerHTML = '100% - Handmatig';
+
+            // Update match type badge
+            const matchItem = document.querySelector(`[data-match-id="${matchId}"]`);
+            const header = matchItem.querySelector('.match-header');
+            const existingBadge = header.querySelector('.match-type-badge');
+            if (existingBadge) existingBadge.remove();
+            header.innerHTML += '<span class="match-type-badge manual-badge">Handmatig</span>';
+
+            // Update local matches array
+            const matchIndex = matches.findIndex(m => m.id === matchId);
+            if (matchIndex !== -1) {
+                matches[matchIndex] = match;
+            }
+
+            // Show success message
+            if (result.correction_saved) {
+                showStatus(`Match bijgewerkt en opgeslagen voor toekomstig leren`, 'success');
+            } else {
+                showStatus(`Match bijgewerkt`, 'success');
+            }
+        }
+
+    } catch (error) {
+        console.error('Error updating match:', error);
+        showStatus('Fout bij bijwerken match: ' + error.message, 'error');
+    }
 }

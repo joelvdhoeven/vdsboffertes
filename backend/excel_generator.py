@@ -37,135 +37,133 @@ def generate_filled_excel(
     session_dir: Path
 ) -> str:
     """
-    Generate filled Excel file from template
-    Fills in quantities in the onderhoudsprijzen sheet
+    Generate filled Excel file with matched werkzaamheden
 
-    Strategy:
-    - Load the template Excel
-    - For each match, find the corresponding row in onderhoudsprijzen sheet
-    - Fill in the quantity in column W (TOTAAL) or column H (Algemeen woning)
-    - Save as new file
+    Creates a new Excel file with all matches, their quantities, and prices
     """
-    # Load workbook (data_only=False to preserve formulas)
-    wb = load_workbook(template_path, data_only=False)
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
-    if "onderhoudsprijzen" not in wb.sheetnames:
-        raise ValueError("onderhoudsprijzen sheet not found")
+    # Create a new workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Offerte"
 
-    if "Prijzenboek" not in wb.sheetnames:
-        raise ValueError("Prijzenboek sheet not found")
+    # Define styles
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="FF6B35", end_color="FF6B35", fill_type="solid")
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
 
-    sheet_onderhoud = wb["onderhoudsprijzen"]
-    sheet_prijzenboek = wb["Prijzenboek"]
+    # Create headers
+    headers = [
+        "Ruimte",
+        "Opname Omschrijving",
+        "Hoeveelheid",
+        "Eenheid",
+        "Prijzenboek Code",
+        "Prijzenboek Omschrijving",
+        "Prijs per stuk",
+        "Totaal Excl. BTW",
+        "Match Type",
+        "Confidence %"
+    ]
 
-    # First, create a mapping of prijzenboek code to row number in Prijzenboek sheet
-    prijzenboek_code_to_row = {}
-    for row_num in range(2, sheet_prijzenboek.max_row + 1):
-        code = sheet_prijzenboek.cell(row=row_num, column=1).value  # Column A
-        if code:
-            prijzenboek_code_to_row[str(code)] = row_num
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.border = border
 
-    print(f"Built prijzenboek code mapping: {len(prijzenboek_code_to_row)} items")
-
-    # Now, create a mapping of prijzenboek row to onderhoudsprijzen row
-    # The onderhoudsprijzen sheet has formulas in columns AI-AO that reference 'Product filter'
-    # which in turn references Prijzenboek
-    # So we'll search by omschrijving (column F / column 36)
-
-    # Simple approach for MVP: Search by description text
-    onderhoud_rows_by_description = {}
-    for row_num in range(13, min(3100, sheet_onderhoud.max_row + 1)):
-        # Column F (6) has omschrijving
-        omschrijving_cell = sheet_onderhoud.cell(row=row_num, column=6)
-        omschrijving = omschrijving_cell.value
-
-        if omschrijving and isinstance(omschrijving, str):
-            # It might be a formula, try to get the string value
-            if omschrijving.startswith('='):
-                # Skip formulas for now in this simple approach
-                continue
-
-            omschrijving_clean = omschrijving.strip().lower()
-            if omschrijving_clean:
-                onderhoud_rows_by_description[omschrijving_clean] = row_num
-
-    print(f"Built onderhoudsprijzen description mapping: {len(onderhoud_rows_by_description)} items")
-
-    # Alternative approach: Since we know the row_num from prijzenboek parsing,
-    # and onderhoudsprijzen formulas reference Product filter which references Prijzenboek,
-    # we can use a simple offset calculation
-    #
-    # Product filter row N references Prijzenboek row N
-    # onderhoudsprijzen row M references Product filter row (M - 11)
-    # So onderhoudsprijzen row M corresponds to Prijzenboek row (M - 11)
-    #
-    # Therefore: onderhoudsprijzen_row = prijzenboek_row + 11
-
-    filled_count = 0
-    not_found_count = 0
+    # Fill in the data
+    row_num = 2
+    total_excl = 0
 
     for match in matches:
-        prijzenboek_code = match["prijzenboek_match"]["code"]
-        prijzenboek_omschrijving = match["prijzenboek_match"]["omschrijving"]
-        hoeveelheid = match["opname_item"]["hoeveelheid"]
-        prijzenboek_row_num = match["prijzenboek_match"].get("row_num")
+        ruimte = match.get("ruimte", "")
+        opname = match.get("opname_item", {})
+        prijzenboek = match.get("prijzenboek_match", {})
 
-        print(f"\nProcessing match: {prijzenboek_omschrijving[:50]}")
-        print(f"  Code: {prijzenboek_code}, Hoeveelheid: {hoeveelheid}")
+        hoeveelheid = float(opname.get("hoeveelheid", 1))
+        prijs_per_stuk = float(prijzenboek.get("prijs_per_stuk", prijzenboek.get("prijs_excl", 0)))
+        totaal = hoeveelheid * prijs_per_stuk
+        total_excl += totaal
 
-        # Try to find the corresponding row in onderhoudsprijzen
-        onderhoud_row = None
+        # Write row data
+        ws.cell(row=row_num, column=1, value=ruimte).border = border
+        ws.cell(row=row_num, column=2, value=opname.get("omschrijving", "")).border = border
+        ws.cell(row=row_num, column=3, value=hoeveelheid).border = border
+        ws.cell(row=row_num, column=4, value=opname.get("eenheid", "")).border = border
+        ws.cell(row=row_num, column=5, value=prijzenboek.get("code", "")).border = border
+        ws.cell(row=row_num, column=6, value=prijzenboek.get("omschrijving", "")).border = border
 
-        # Method 1: Use row offset calculation
-        if prijzenboek_row_num:
-            onderhoud_row = prijzenboek_row_num + 11
-            print(f"  Using offset calculation: onderhoud row {onderhoud_row}")
+        prijs_cell = ws.cell(row=row_num, column=7, value=prijs_per_stuk)
+        prijs_cell.number_format = '€#,##0.00'
+        prijs_cell.border = border
 
-            # Validate this row exists and seems correct
-            if onderhoud_row > sheet_onderhoud.max_row:
-                print(f"  Row {onderhoud_row} exceeds sheet max row, skipping")
-                onderhoud_row = None
+        totaal_cell = ws.cell(row=row_num, column=8, value=totaal)
+        totaal_cell.number_format = '€#,##0.00'
+        totaal_cell.border = border
 
-        if onderhoud_row:
-            # Fill in the quantity
-            # Column W (23) is TOTAAL
-            # Column H (8) is "Algemeen woning" (first room column)
-            # For MVP, we'll fill column W (total)
+        match_type = match.get("match_type", "fuzzy")
+        ws.cell(row=row_num, column=9, value=match_type).border = border
 
-            # Get current value
-            current_value = sheet_onderhoud.cell(row=onderhoud_row, column=23).value
+        confidence = match.get("confidence", 0) * 100
+        conf_cell = ws.cell(row=row_num, column=10, value=confidence)
+        conf_cell.number_format = '0.0"%"'
+        conf_cell.border = border
 
-            # If current value is a formula (=SUM(...)), keep it
-            # Otherwise, set the quantity
-            # For MVP, let's fill column H instead (Algemeen woning)
-            # This way the SUM formula in W will calculate automatically
+        row_num += 1
 
-            target_column = 8  # Column H (Algemeen woning)
+    # Add totals row
+    row_num += 1
+    ws.cell(row=row_num, column=7, value="Totaal Excl. BTW:").font = Font(bold=True)
+    total_cell = ws.cell(row=row_num, column=8, value=total_excl)
+    total_cell.number_format = '€#,##0.00'
+    total_cell.font = Font(bold=True)
 
-            sheet_onderhoud.cell(row=onderhoud_row, column=target_column).value = hoeveelheid
+    # BTW calculation
+    btw_percentage = 0.21
+    btw_amount = total_excl * btw_percentage
+    row_num += 1
+    ws.cell(row=row_num, column=7, value="BTW (21%):").font = Font(bold=True)
+    btw_cell = ws.cell(row=row_num, column=8, value=btw_amount)
+    btw_cell.number_format = '€#,##0.00'
+    btw_cell.font = Font(bold=True)
 
-            print(f"  Filled row {onderhoud_row}, column H with {hoeveelheid}")
-            filled_count += 1
-        else:
-            print(f"  Could not find matching row in onderhoudsprijzen")
-            not_found_count += 1
+    # Total incl BTW
+    row_num += 1
+    ws.cell(row=row_num, column=7, value="Totaal Incl. BTW:").font = Font(bold=True)
+    total_incl_cell = ws.cell(row=row_num, column=8, value=total_excl + btw_amount)
+    total_incl_cell.number_format = '€#,##0.00'
+    total_incl_cell.font = Font(bold=True)
 
-    print(f"\n{'='*80}")
-    print(f"Filling complete:")
-    print(f"  Filled: {filled_count}")
-    print(f"  Not found: {not_found_count}")
-    print(f"{'='*80}")
+    # Auto-adjust column widths
+    for col_num in range(1, len(headers) + 1):
+        column_letter = openpyxl.utils.get_column_letter(col_num)
+        max_length = len(str(headers[col_num - 1]))
 
-    # Save the modified workbook
+        for row in range(2, ws.max_row + 1):
+            cell_value = ws.cell(row=row, column=col_num).value
+            if cell_value:
+                max_length = max(max_length, len(str(cell_value)))
+
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+
+    # Save the workbook
     output_filename = "Offerte_Generated.xlsx"
     output_path = session_dir / output_filename
 
-    # Save as .xlsx (not .xlsm to avoid macro issues)
     wb.save(str(output_path))
-
     wb.close()
 
-    print(f"\nSaved to: {output_path}")
+    print(f"Generated Excel with {len(matches)} items, total: €{total_excl:.2f}")
 
     return str(output_path)
 
