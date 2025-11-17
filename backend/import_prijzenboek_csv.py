@@ -1,14 +1,12 @@
 """
 Script om vereenvoudigde prijzenboek CSV te importeren in het Excel prijzenboek
-CSV formaat:
+CSV formaat (puntkomma-gescheiden):
 - CODERING DATABASE
 - OMSCHRIJVING VAKMAN MUTATIE
 - EENHEID
 - Materiaal per stuk EXCL BTW
 - Uren per stuk EXCL BTW
 - Prijs per stuk EXCL BTW
-- TOTAAL EXCL BTW
-- TOTAAL INCL BTW
 - OMSCHRIJVING OFFERTE MUTATIE
 
 Wordt toegevoegd aan Excel met alle ruimte kolommen (C-O) op 0
@@ -45,8 +43,8 @@ def parse_csv(csv_path: str) -> List[Dict]:
                 'materiaal': clean_amount(row['Materiaal per stuk EXCL BTW']),
                 'uren': clean_amount(row['Uren per stuk EXCL BTW']),
                 'prijs_per_stuk': clean_amount(row['Prijs per stuk EXCL BTW']),
-                'totaal_excl': clean_amount(row['TOTAAL EXCL BTW']),
-                'totaal_incl': clean_amount(row['TOTAAL INCL BTW']),
+                'totaal_excl': 0.0,  # Not in simplified CSV
+                'totaal_incl': 0.0,  # Not in simplified CSV
                 'omschrijving_offerte': row['OMSCHRIJVING OFFERTE MUTATIE'].strip(),
             }
             items.append(item)

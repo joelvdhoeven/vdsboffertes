@@ -132,6 +132,10 @@ function closeModal() {
 function handleAddItem(event) {
     event.preventDefault();
 
+    const materiaal = parseFloat(document.getElementById('newMateriaal').value) || 0;
+    const uren = parseFloat(document.getElementById('newUren').value) || 0;
+    const prijs_per_stuk = parseFloat(document.getElementById('newPrijsPerStuk').value) || 0;
+
     const newItem = {
         code: document.getElementById('newCode').value,
         omschrijving: document.getElementById('newOmschrijving').value,
@@ -153,13 +157,13 @@ function handleAddItem(event) {
         meerwerk: 0,
 
         // Prijzen
-        totaal: parseFloat(document.getElementById('newTotaal').value) || 0,
+        totaal: 0,  // Wordt berekend op basis van ruimtes
         eenheid: document.getElementById('newEenheid').value || 'stu',
-        materiaal: parseFloat(document.getElementById('newMateriaal').value) || 0,
-        uren: parseFloat(document.getElementById('newUren').value) || 0,
-        prijs_per_stuk: parseFloat(document.getElementById('newPrijsPerStuk').value) || 0,
-        totaal_excl: parseFloat(document.getElementById('newTotaalExcl').value) || 0,
-        totaal_incl: parseFloat(document.getElementById('newTotaalIncl').value) || 0
+        materiaal: materiaal,
+        uren: uren,
+        prijs_per_stuk: prijs_per_stuk,
+        totaal_excl: 0,  // Niet meer nodig in UI
+        totaal_incl: 0   // Niet meer nodig in UI
     };
 
     prijzenboekData.push(newItem);
@@ -251,77 +255,58 @@ async function handlePrijzenboekUpload(event) {
 }
 
 function downloadTemplate() {
-    // Create template matching the actual Excel structure
-    // Columns: A-B (Code, Omschrijving), C-O (Ruimtes), Q (Totaal), R-Y (Eenheid, Prijzen, etc.)
+    // Create simplified template for easy import
+    // Uses semicolon delimiter for Excel compatibility
     const template = [
-        // Headers
+        // Headers - simplified structure matching user's data
         [
             'CODERING DATABASE',
             'OMSCHRIJVING VAKMAN MUTATIE',
-            'Algemeen woning',
-            'Hal / Overloop',
-            'Woonkamer',
-            'Keuken',
-            'Toilet',
-            'Badkamer',
-            'Slaapk voor KL',
-            'Slaapk voor GR',
-            'Slaapk achter KL',
-            'Slaapk achter GR',
-            'Zolder',
-            'Berging',
-            'Meerwerk',
-            '', // Kolom P leeg
-            'TOTAAL',
             'EENHEID',
             'Materiaal per stuk EXCL BTW',
             'Uren per stuk EXCL BTW',
             'Prijs per stuk EXCL BTW',
-            '', // Kolom V leeg
-            'TOTAAL EXCL BTW',
-            'TOTAAL INCL BTW',
             'OMSCHRIJVING OFFERTE MUTATIE'
         ],
         // Example rows
         [
             '0000011001',
-            'Badkamerrenovatie >0 - 2 m2',
-            '', '', '', '', '', '', '', '', '', '', '', '', '0', '',
-            '0',
+            'Badkamerrenovatie >0 - 2 m²',
             'stu',
             '6285.20',
             '0.00',
             '6285.20',
-            '',
-            '0.00',
-            '0.00',
-            'Badkamerrenovatie >0 - 2 m2'
+            'Badkamerrenovatie >0 - 2 m²'
         ],
         [
-            'A.01.001',
-            'Voorbeeld werkzaamheid',
-            '', '', '', '', '', '', '', '', '', '', '', '', '0', '',
-            '0',
+            '0017004001',
+            'woning bezemschoon opleveren',
+            'won',
+            '0.00',
+            '132.06',
+            '132.06',
+            'woning bezemschoon opleveren'
+        ],
+        [
+            '0017004005',
+            'woning per m2 beschermen/afdekken',
             'm2',
-            '15.50',
-            '2.00',
-            '17.50',
-            '',
-            '0.00',
-            '0.00',
-            'Voorbeeld werkzaamheid'
+            '1.12',
+            '2.64',
+            '3.76',
+            'woning per m2 beschermen/afdekken'
         ]
     ];
 
-    // Convert to CSV
+    // Convert to CSV with semicolon delimiter (Excel-friendly)
     const csv = template.map(row => row.map(cell => {
-        // Escape cells with commas or quotes
+        // Escape cells with semicolons or quotes
         const str = String(cell);
-        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        if (str.includes(';') || str.includes('"') || str.includes('\n')) {
             return '"' + str.replace(/"/g, '""') + '"';
         }
         return str;
-    }).join(',')).join('\n');
+    }).join(';')).join('\n');
 
     // Add UTF-8 BOM for proper Excel encoding
     const BOM = '\uFEFF';
@@ -341,7 +326,7 @@ function downloadTemplate() {
 
     // Show confirmation
     const statusSpan = document.getElementById('uploadStatus');
-    statusSpan.textContent = '✅ Sjabloon gedownload - Importeer in Excel voor beste resultaten';
+    statusSpan.textContent = '✅ Sjabloon gedownload (puntkomma-gescheiden) - Open in Excel of teksteditor';
     statusSpan.style.color = '#27AE60';
     setTimeout(() => {
         statusSpan.textContent = '';
