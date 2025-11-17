@@ -12,39 +12,49 @@
         }
 
         :root {
-            --primary-color: #FF6B35;
-            --primary-dark: #E85A2A;
-            --secondary-color: #2C3E50;
-            --accent-color: #F7931E;
-            --success-color: #27AE60;
-            --text-dark: #2C3E50;
-            --text-light: #7F8C8D;
-            --bg-light: #F8F9FA;
-            --border-color: #E0E0E0;
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #141414;
+            --bg-tertiary: #1e1e1e;
+            --bg-hover: #282828;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --text-muted: #707070;
+            --accent-primary: #f97316;
+            --accent-hover: #ea580c;
+            --accent-success: #22c55e;
+            --accent-danger: #f43f5e;
+            --accent-warning: #eab308;
+            --border-color: #2a2a2a;
+            --border-light: #3a3a3a;
+            --gradient-primary: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+            --gradient-success: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             min-height: 100vh;
-            padding: 20px;
+            padding: 24px;
+            line-height: 1.5;
         }
 
         .container {
-            max-width: 900px;
+            max-width: 960px;
             margin: 0 auto;
         }
 
         /* Header with logo */
         .header {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 24px 32px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+            margin-bottom: 28px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            border: 1px solid var(--border-color);
         }
 
         .logo-container {
@@ -54,67 +64,76 @@
         }
 
         .logo {
-            max-height: 80px;
+            max-height: 60px;
             width: auto;
             display: block;
+            filter: brightness(1.1);
         }
 
         /* Navigation */
         .nav {
             display: flex;
-            gap: 20px;
+            gap: 12px;
         }
 
         .nav a {
-            color: var(--secondary-color);
+            color: var(--text-secondary);
             text-decoration: none;
             padding: 10px 20px;
-            border-radius: 8px;
+            border-radius: 10px;
             font-weight: 500;
-            transition: all 0.3s;
-            border: 2px solid transparent;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            font-size: 14px;
         }
 
         .nav a:hover {
-            background: var(--bg-light);
-            border-color: var(--primary-color);
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border-color: var(--border-light);
         }
 
         .nav a.active {
-            background: var(--primary-color);
+            background: var(--gradient-primary);
             color: white;
+            box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
         }
 
         .card {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+            margin-bottom: 28px;
+            border: 1px solid var(--border-color);
         }
 
         h1 {
-            color: var(--secondary-color);
-            margin-bottom: 10px;
+            color: var(--text-primary);
+            margin-bottom: 12px;
             font-size: 28px;
             font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, #b0b0b0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .subtitle {
-            color: var(--text-light);
-            margin-bottom: 30px;
-            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 28px;
+            font-size: 15px;
         }
 
         .upload-section {
-            margin-bottom: 30px;
+            margin-bottom: 28px;
         }
 
         .upload-label {
             display: block;
             font-weight: 600;
-            color: var(--secondary-color);
-            margin-bottom: 8px;
+            color: var(--text-primary);
+            margin-bottom: 10px;
             font-size: 14px;
         }
 
@@ -132,23 +151,23 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
-            border: 2px dashed var(--border-color);
-            border-radius: 8px;
-            background: var(--bg-light);
+            padding: 28px;
+            border: 2px dashed var(--border-light);
+            border-radius: 12px;
+            background: var(--bg-tertiary);
             cursor: pointer;
-            transition: all 0.3s;
-            min-height: 100px;
+            transition: all 0.2s ease;
+            min-height: 120px;
         }
 
         .file-input-label:hover {
-            border-color: var(--primary-color);
-            background: #FFF5F0;
+            border-color: var(--accent-primary);
+            background: rgba(249, 115, 22, 0.1);
         }
 
         .file-input-label.has-file {
-            border-color: var(--success-color);
-            background: #E8F5E9;
+            border-color: var(--accent-success);
+            background: rgba(34, 197, 94, 0.1);
         }
 
         .file-info {
@@ -156,94 +175,105 @@
         }
 
         .file-icon {
-            font-size: 36px;
-            margin-bottom: 10px;
+            font-size: 32px;
+            margin-bottom: 12px;
+            opacity: 0.6;
         }
 
         .file-name {
-            font-weight: 500;
-            color: var(--text-dark);
-            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            font-size: 15px;
         }
 
         .file-hint {
-            color: var(--text-light);
+            color: var(--text-muted);
             font-size: 13px;
         }
 
         .btn {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            background: var(--gradient-primary);
             color: white;
             border: none;
             padding: 14px 32px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.2s ease;
             width: 100%;
+            box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
         }
 
         .btn:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+            box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
         }
 
         .btn:disabled {
-            opacity: 0.6;
+            opacity: 0.5;
             cursor: not-allowed;
+            transform: none;
         }
 
         .progress {
             display: none;
-            margin: 20px 0;
+            margin: 24px 0;
         }
 
         .progress-bar {
             width: 100%;
-            height: 8px;
-            background: #e0e0e0;
-            border-radius: 4px;
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
             overflow: hidden;
         }
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, var(--primary-color) 0%, var(--accent-color) 100%);
+            background: var(--gradient-primary);
             width: 0%;
-            transition: width 0.3s;
+            transition: width 0.3s ease;
+            border-radius: 3px;
         }
 
         .progress-text {
             text-align: center;
-            margin-top: 10px;
-            color: var(--text-light);
+            margin-top: 12px;
+            color: var(--text-secondary);
             font-size: 14px;
+            font-weight: 500;
         }
 
         .status {
-            padding: 12px;
-            border-radius: 6px;
-            margin: 10px 0;
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin: 12px 0;
             font-size: 14px;
+            font-weight: 500;
         }
 
         .status.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--accent-success);
+            border: 1px solid rgba(34, 197, 94, 0.3);
         }
 
         .status.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: rgba(244, 63, 94, 0.15);
+            color: var(--accent-danger);
+            border: 1px solid rgba(244, 63, 94, 0.3);
         }
 
         .status.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
+            background: rgba(249, 115, 22, 0.15);
+            color: var(--accent-primary);
+            border: 1px solid rgba(249, 115, 22, 0.3);
         }
 
         .matches-container {
@@ -252,34 +282,42 @@
 
         .match-item {
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            background: var(--bg-light);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 16px;
+            background: var(--bg-tertiary);
+            transition: all 0.2s ease;
+        }
+
+        .match-item:hover {
+            border-color: var(--border-light);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
         .match-header {
-            font-size: 12px;
-            color: var(--text-light);
-            margin-bottom: 8px;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
             font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 0.8px;
         }
 
         .match-content {
             display: grid;
-            gap: 10px;
+            gap: 12px;
         }
 
         .match-row {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
         .match-arrow {
-            font-size: 20px;
-            color: var(--primary-color);
+            font-size: 18px;
+            color: var(--accent-primary);
+            opacity: 0.8;
         }
 
         .match-text {
@@ -287,66 +325,79 @@
         }
 
         .match-label {
-            font-size: 11px;
-            color: #999;
+            font-size: 10px;
+            color: var(--text-muted);
             text-transform: uppercase;
-            margin-bottom: 3px;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
         }
 
         .match-value {
-            color: var(--text-dark);
+            color: var(--text-primary);
             font-weight: 500;
+            font-size: 14px;
         }
 
         .confidence-badge {
             display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
+            padding: 5px 14px;
+            border-radius: 20px;
             font-size: 12px;
             font-weight: 600;
         }
 
         .confidence-high {
-            background: #d4edda;
-            color: #155724;
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--accent-success);
         }
 
         .confidence-medium {
-            background: #fff3cd;
-            color: #856404;
+            background: rgba(234, 179, 8, 0.15);
+            color: var(--accent-warning);
         }
 
         .confidence-low {
-            background: #f8d7da;
-            color: #721c24;
+            background: rgba(244, 63, 94, 0.15);
+            color: var(--accent-danger);
         }
 
         .stats {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin: 20px 0;
+            gap: 16px;
+            margin: 24px 0;
         }
 
         .stat-card {
-            background: linear-gradient(135deg, #FFF5F0 0%, #FFE8DD 100%);
+            background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-hover) 100%);
             padding: 20px;
-            border-radius: 8px;
+            border-radius: 14px;
             text-align: center;
-            border: 1px solid #FFD6C4;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
         }
 
         .stat-number {
             font-size: 32px;
-            font-weight: 700;
-            color: var(--primary-color);
-            margin-bottom: 5px;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 6px;
         }
 
         .stat-label {
-            font-size: 13px;
-            color: var(--text-light);
+            font-size: 11px;
+            color: var(--text-secondary);
             text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
         }
 
         .hidden {
@@ -410,33 +461,55 @@
         .download-section {
             display: none;
             text-align: center;
-            padding: 30px;
-            background: linear-gradient(135deg, #e8f5e9 0%, #f1f8f4 100%);
-            border-radius: 12px;
+            padding: 36px;
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+            border-radius: 16px;
+            border: 1px solid rgba(34, 197, 94, 0.2);
         }
 
         .download-section h2 {
-            color: var(--success-color);
-            margin-bottom: 15px;
+            color: var(--accent-success);
+            margin-bottom: 16px;
+            font-size: 22px;
+        }
+
+        .download-section p {
+            color: var(--text-secondary);
+            margin-bottom: 8px;
         }
 
         .download-btn {
-            background: var(--success-color);
+            background: var(--gradient-success);
             color: white;
             padding: 16px 40px;
-            font-size: 18px;
+            font-size: 16px;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
             font-weight: 600;
             text-decoration: none;
             display: inline-block;
-            margin-top: 15px;
-            transition: transform 0.2s;
+            margin-top: 16px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
         }
 
         .download-btn:hover {
-            transform: scale(1.05);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
+        }
+
+        .btn-reset {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-light);
+            max-width: 220px;
+            margin: 24px auto 0;
+            box-shadow: none;
+        }
+
+        .btn-reset:hover {
+            background: var(--bg-hover);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
 
         /* Responsive */
@@ -444,6 +517,7 @@
             .header {
                 flex-direction: column;
                 text-align: center;
+                gap: 16px;
             }
 
             .stats {
@@ -457,18 +531,18 @@
         <!-- Header with Logo -->
         <div class="header">
             <div class="logo-container">
-                <img src="assets/logo.png" alt="Offerte Generator" class="logo" id="companyLogo">
+                <img src="assets/logo.png" alt="Van der Speld Bouw" class="logo" id="companyLogo">
             </div>
             <nav class="nav">
                 <a href="index.html" class="active">Home</a>
-                <a href="admin.html">Admin</a>
+                <a href="admin.html">Prijzenboek</a>
             </nav>
         </div>
 
         <div class="card">
             <h1>Offerte Generator</h1>
             <p class="subtitle">Upload je opname notities om automatisch een offerte te genereren</p>
-            <p class="subtitle" style="font-size: 14px; color: var(--accent-color); margin-top: -20px;">Het prijzenboek wordt automatisch geladen uit de admin instellingen</p>
+            <p class="subtitle" style="font-size: 13px; color: var(--accent-primary); margin-top: -20px; opacity: 0.9;">Het prijzenboek wordt automatisch geladen uit de admin instellingen</p>
 
             <!-- Upload Section -->
             <div id="uploadSection">
@@ -489,9 +563,9 @@
                         <input type="file" id="notesFile" class="file-input" accept=".docx,.txt">
                         <label for="notesFile" id="notesLabel" class="file-input-label">
                             <div class="file-info">
-                                <div class="file-icon">📄</div>
+                                <div class="file-icon">[ ]</div>
                                 <div class="file-name">Klik om bestand te selecteren</div>
-                                <div class="file-hint">.docx of .txt</div>
+                                <div class="file-hint">.docx of .txt bestanden</div>
                             </div>
                         </label>
                     </div>
@@ -529,7 +603,7 @@ Woonkamer
 
             <!-- Matches Review Section -->
             <div id="matchesSection" class="matches-container">
-                <h2>Matches Review</h2>
+                <h2 style="margin-bottom: 20px; font-size: 20px;">Matches Review</h2>
                 <div class="stats" id="stats"></div>
                 <div id="matchesList"></div>
                 <button id="acceptBtn" class="btn">ACCEPTEER & GENEREER EXCEL</button>
@@ -537,11 +611,11 @@ Woonkamer
 
             <!-- Download Section -->
             <div id="downloadSection" class="download-section">
-                <h2>✓ Offerte Gegenereerd!</h2>
+                <h2>Offerte Gegenereerd</h2>
                 <p>Je Excel bestand is klaar om te downloaden.</p>
                 <a id="downloadLink" href="#" class="download-btn" download>DOWNLOAD EXCEL</a>
-                <br><br>
-                <button onclick="location.reload()" class="btn" style="background: #6c757d; max-width: 200px; margin: 20px auto;">NIEUWE OFFERTE</button>
+                <br>
+                <button onclick="location.reload()" class="btn btn-reset">NIEUWE OFFERTE</button>
             </div>
         </div>
     </div>
