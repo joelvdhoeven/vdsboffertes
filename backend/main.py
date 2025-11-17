@@ -1,7 +1,7 @@
 """
 FastAPI backend for Offerte Generator MVP
 """
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
@@ -473,43 +473,139 @@ async def clear_all_prijzenboek_items():
 
 
 @app.post("/api/admin/prijzenboek/upload")
-async def upload_prijzenboek_admin(file: UploadFile = File(...)):
-    """Upload and replace prijzenboek Excel file"""
+async def upload_prijzenboek_admin(file: UploadFile = File(...), locale: str = Form("nl")):
+    """Upload and replace prijzenboek Excel or CSV file
+
+    Args:
+        file: Excel (.xlsx, .xlsm, .xls) or CSV file
+        locale: 'nl' for Dutch (decimal comma, semicolon delimiter) or 'en' for English (decimal dot, comma delimiter)
+    """
     try:
         # Validate file type
-        if not file.filename.endswith(('.xlsx', '.xlsm', '.xls')):
-            raise HTTPException(status_code=400, detail="Only Excel files are supported")
+        if not file.filename.endswith(('.xlsx', '.xlsm', '.xls', '.csv')):
+            raise HTTPException(status_code=400, detail="Only Excel or CSV files are supported")
 
-        # Save uploaded file
-        prijzenboek_path = Path(__file__).parent / "Juiste opnamelijst.xlsx"
-
-        # Backup old file
-        backup_path = Path(__file__).parent / "Juiste opnamelijst_backup.xlsx"
-        if prijzenboek_path.exists():
-            shutil.copy(str(prijzenboek_path), str(backup_path))
-
-        # Save new file
-        with open(prijzenboek_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-
-        # Parse the new file to verify it's valid
+        # Import database
         try:
-            from .excel_parser_new import parse_prijzenboek_new
+            from .database import get_db
         except ImportError:
-            from excel_parser_new import parse_prijzenboek_new
+            from database import get_db
 
-        prijzenboek_items = parse_prijzenboek_new(str(prijzenboek_path))
+        db = get_db()
+
+        if file.filename.endswith('.csv'):
+            # Handle CSV file with locale support
+            import csv
+            import io
+
+            content = await file.read()
+            text_content = content.decode('utf-8-sig')  # Handle BOM
+
+            # Determine delimiter based on locale
+            delimiter = ';' if locale == 'nl' else ','
+
+            # Parse CSV
+            reader = csv.reader(io.StringIO(text_content), delimiter=delimiter)
+            rows = list(reader)
+
+            if len(rows) < 2:
+                raise HTTPException(status_code=400, detail="CSV file must have at least a header and one data row")
+
+            # Skip header row
+            prijzenboek_items = []
+            for row_num, row in enumerate(rows[1:], start=2):
+                if len(row) < 6:
+                    continue  # Skip incomplete rows
+
+                # Parse based on locale
+                def parse_number(value):
+                    if not value:
+                        return 0.0
+                    value = str(value).strip()
+                    if locale == 'nl':
+                        # Dutch: comma is decimal separator
+                        value = value.replace('.', '').replace(',', '.')
+                    return float(value) if value else 0.0
+
+                code = row[0].strip() if len(row) > 0 else ""
+                omschrijving = row[1].strip() if len(row) > 1 else ""
+
+                if not code or not omschrijving:
+                    continue  # Skip empty rows
+
+                eenheid = row[2].strip().lower() if len(row) > 2 else ""
+                materiaal = parse_number(row[3]) if len(row) > 3 else 0.0
+                uren = parse_number(row[4]) if len(row) > 4 else 0.0
+                prijs_per_stuk = parse_number(row[5]) if len(row) > 5 else 0.0
+                omschrijving_offerte = row[6].strip() if len(row) > 6 else omschrijving
+
+                item = {
+                    "code": code,
+                    "omschrijving": omschrijving,
+                    "omschrijving_offerte": omschrijving_offerte,
+                    "algemeen_woning": 0.0,
+                    "hal_overloop": 0.0,
+                    "woonkamer": 0.0,
+                    "keuken": 0.0,
+                    "toilet": 0.0,
+                    "badkamer": 0.0,
+                    "slaapk_voor_kl": 0.0,
+                    "slaapk_voor_gr": 0.0,
+                    "slaapk_achter_kl": 0.0,
+                    "slaapk_achter_gr": 0.0,
+                    "zolder": 0.0,
+                    "berging": 0.0,
+                    "meerwerk": 0.0,
+                    "totaal": 0.0,
+                    "eenheid": eenheid,
+                    "materiaal": materiaal,
+                    "uren": uren,
+                    "prijs_per_stuk": prijs_per_stuk,
+                    "totaal_excl": 0.0,
+                    "totaal_incl": 0.0,
+                    "row_num": row_num
+                }
+
+                prijzenboek_items.append(item)
+                db.upsert_item(item)
+
+        else:
+            # Handle Excel file
+            # Save uploaded file
+            prijzenboek_path = Path(__file__).parent / "Juiste opnamelijst.xlsx"
+
+            # Backup old file
+            backup_path = Path(__file__).parent / "Juiste opnamelijst_backup.xlsx"
+            if prijzenboek_path.exists():
+                shutil.copy(str(prijzenboek_path), str(backup_path))
+
+            # Save new file
+            with open(prijzenboek_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+
+            # Parse the new file to verify it's valid
+            try:
+                from .excel_parser_new import parse_prijzenboek_new
+            except ImportError:
+                from excel_parser_new import parse_prijzenboek_new
+
+            prijzenboek_items = parse_prijzenboek_new(str(prijzenboek_path))
+
+            # Save all items to database
+            for item in prijzenboek_items:
+                db.upsert_item(item)
 
         return {
             "success": True,
-            "message": "Prijzenboek uploaded successfully",
+            "message": f"Prijzenboek uploaded successfully ({locale.upper()} format)",
             "items_loaded": len(prijzenboek_items),
-            "filename": file.filename
+            "filename": file.filename,
+            "locale": locale
         }
 
     except Exception as e:
-        # Restore backup if upload failed
-        if backup_path.exists():
+        # Restore backup if upload failed (only for Excel)
+        if 'backup_path' in locals() and backup_path.exists():
             shutil.copy(str(backup_path), str(prijzenboek_path))
         raise HTTPException(status_code=500, detail=str(e))
 

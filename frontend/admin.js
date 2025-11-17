@@ -520,8 +520,12 @@ async function handlePrijzenboekUpload(event) {
     statusSpan.textContent = 'Uploaden...';
     statusSpan.style.color = 'var(--accent-warning)';
 
+    // Get selected locale
+    const locale = document.getElementById('excelLocale').value;
+
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('locale', locale);
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/admin/prijzenboek/upload`, {
@@ -535,7 +539,7 @@ async function handlePrijzenboekUpload(event) {
         }
 
         const data = await response.json();
-        statusSpan.textContent = `${data.items_loaded} items geladen`;
+        statusSpan.textContent = `${data.items_loaded} items geladen (${locale.toUpperCase()} formaat)`;
         statusSpan.style.color = 'var(--accent-success)';
 
         // Reload the table with new data
