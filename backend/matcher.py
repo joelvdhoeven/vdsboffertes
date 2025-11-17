@@ -35,6 +35,12 @@ def normalize_unit(unit: str) -> str:
         'pcs': 'stu',
         'cm': 'cm',
         'mm': 'mm',
+        'won': 'won',
+        'woning': 'won',
+        'ruimte': 'ruimte',
+        'm³': 'm3',
+        'm3': 'm3',
+        'kubieke meter': 'm3',
     }
 
     return unit_map.get(unit, unit)
@@ -78,12 +84,21 @@ def calculate_unit_score(opname_unit: str, prijzenboek_unit: str) -> float:
     length_units = {'m1', 'm', 'cm', 'mm'}
     area_units = {'m2', 'm²'}
     count_units = {'stu', 'stuks', 'st', 'stuk', 'pcs'}
+    volume_units = {'m3', 'm³'}
+    woning_units = {'won', 'woning'}
+    ruimte_units = {'ruimte'}
 
     if opname_norm in length_units and prijzenboek_norm in length_units:
         return 0.7
     if opname_norm in area_units and prijzenboek_norm in area_units:
         return 0.9
     if opname_norm in count_units and prijzenboek_norm in count_units:
+        return 0.9
+    if opname_norm in volume_units and prijzenboek_norm in volume_units:
+        return 0.9
+    if opname_norm in woning_units and prijzenboek_norm in woning_units:
+        return 0.9
+    if opname_norm in ruimte_units and prijzenboek_norm in ruimte_units:
         return 0.9
 
     # No match
@@ -173,10 +188,13 @@ def match_werkzaamheden(
                 "prijzenboek_match": {
                     "code": best_item["code"],
                     "omschrijving": best_item["omschrijving"],
+                    "omschrijving_offerte": best_item.get("omschrijving_offerte", best_item["omschrijving"]),
                     "eenheid": best_item["eenheid"],
-                    "prijs_excl": best_item["totaal_excl"],
-                    "prijs_incl": best_item["totaal_incl"],
-                    "btw_laag": best_item["btw_laag"],
+                    "materiaal": best_item.get("materiaal", 0),
+                    "uren": best_item.get("uren", 0),
+                    "prijs_per_stuk": best_item.get("prijs_per_stuk", 0),
+                    "prijs_excl": best_item.get("totaal_excl", best_item.get("prijs_per_stuk", 0)),
+                    "prijs_incl": best_item.get("totaal_incl", 0),
                     "row_num": best_item.get("row_num", None)
                 },
                 "confidence": round(confidence, 3),
