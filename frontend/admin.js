@@ -41,9 +41,9 @@ async function loadPrijzenboek() {
         console.error('Error loading prijzenboek:', error);
         document.getElementById('tableBody').innerHTML = `
             <tr>
-                <td colspan="8" style="text-align: center; padding: 40px; color: #E74C3C;">
-                    <p>❌ Fout bij laden van prijzenboek</p>
-                    <p style="font-size: 12px; color: #7F8C8D;">${error.message}</p>
+                <td colspan="8" style="text-align: center; padding: 40px; color: var(--accent-danger);">
+                    <p style="font-weight: 600; margin-bottom: 8px;">Fout bij laden van prijzenboek</p>
+                    <p style="font-size: 12px; color: var(--text-muted);">${error.message}</p>
                     <button class="btn" onclick="loadPrijzenboek()" style="margin-top: 15px;">Opnieuw Proberen</button>
                 </td>
             </tr>
@@ -57,9 +57,9 @@ function renderTable() {
     if (filteredData.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" style="text-align: center; padding: 40px;">
-                    <p>Geen items gevonden</p>
-                    <button class="btn" onclick="showAddModal()" style="margin-top: 15px;">+ Voeg Eerste Item Toe</button>
+                <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                    <p style="margin-bottom: 12px;">Geen items gevonden</p>
+                    <button class="btn" onclick="showAddModal()">Voeg Eerste Item Toe</button>
                 </td>
             </tr>
         `;
@@ -106,7 +106,7 @@ function renderTable() {
             </td>
             <td>
                 <div class="actions">
-                    <button class="btn btn-sm btn-danger" onclick="deleteItem('${item.code}')">🗑️</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteItem('${item.code}')">Verwijder</button>
                 </div>
             </td>
         </tr>
@@ -246,8 +246,8 @@ async function deleteSelected() {
 
     // Show progress
     const statusSpan = document.getElementById('uploadStatus');
-    statusSpan.textContent = `⏳ Verwijderen... (0/${count})`;
-    statusSpan.style.color = '#F7931E';
+    statusSpan.textContent = `Verwijderen... (0/${count})`;
+    statusSpan.style.color = 'var(--accent-warning)';
 
     for (let i = 0; i < codesToDelete.length; i++) {
         const code = codesToDelete[i];
@@ -272,7 +272,7 @@ async function deleteSelected() {
         }
 
         // Update progress
-        statusSpan.textContent = `⏳ Verwijderen... (${i + 1}/${count})`;
+        statusSpan.textContent = `Verwijderen... (${i + 1}/${count})`;
     }
 
     // Clear selection
@@ -285,11 +285,11 @@ async function deleteSelected() {
 
     // Show result
     if (failed === 0) {
-        statusSpan.textContent = `✅ ${deleted} items verwijderd`;
-        statusSpan.style.color = '#27AE60';
+        statusSpan.textContent = `${deleted} items verwijderd`;
+        statusSpan.style.color = 'var(--accent-success)';
     } else {
-        statusSpan.textContent = `⚠️ ${deleted} verwijderd, ${failed} mislukt`;
-        statusSpan.style.color = '#F7931E';
+        statusSpan.textContent = `${deleted} verwijderd, ${failed} mislukt`;
+        statusSpan.style.color = 'var(--accent-warning)';
     }
 
     setTimeout(() => {
@@ -441,11 +441,11 @@ async function handleAddItem(event) {
         closeModal();
 
         // Show success message
-        alert(`✅ Item ${result.action}: ${newItem.code}`);
+        alert(`Item ${result.action}: ${newItem.code}`);
 
     } catch (error) {
         console.error('Error saving item:', error);
-        alert('❌ Fout bij opslaan: ' + error.message);
+        alert('Fout bij opslaan: ' + error.message);
     }
 
     return false;
@@ -479,7 +479,7 @@ async function deleteItem(code) {
 
         } catch (error) {
             console.error('Error deleting item:', error);
-            alert('❌ Fout bij verwijderen: ' + error.message);
+            alert('Fout bij verwijderen: ' + error.message);
         }
     }
 }
@@ -504,11 +504,11 @@ async function savePrijzenboek() {
             throw new Error('Failed to save prijzenboek');
         }
 
-        alert('✅ Prijzenboek succesvol opgeslagen!');
+        alert('Prijzenboek succesvol opgeslagen');
 
     } catch (error) {
         console.error('Error saving prijzenboek:', error);
-        alert('❌ Fout bij opslaan: ' + error.message);
+        alert('Fout bij opslaan: ' + error.message);
     }
 }
 
@@ -517,8 +517,8 @@ async function handlePrijzenboekUpload(event) {
     if (!file) return;
 
     const statusSpan = document.getElementById('uploadStatus');
-    statusSpan.textContent = '⏳ Uploaden...';
-    statusSpan.style.color = '#F7931E';
+    statusSpan.textContent = 'Uploaden...';
+    statusSpan.style.color = 'var(--accent-warning)';
 
     const formData = new FormData();
     formData.append('file', file);
@@ -535,8 +535,8 @@ async function handlePrijzenboekUpload(event) {
         }
 
         const data = await response.json();
-        statusSpan.textContent = `✅ ${data.items_loaded} items geladen`;
-        statusSpan.style.color = '#27AE60';
+        statusSpan.textContent = `${data.items_loaded} items geladen`;
+        statusSpan.style.color = 'var(--accent-success)';
 
         // Reload the table with new data
         await loadPrijzenboek();
@@ -547,8 +547,8 @@ async function handlePrijzenboekUpload(event) {
 
     } catch (error) {
         console.error('Error uploading prijzenboek:', error);
-        statusSpan.textContent = `❌ ${error.message}`;
-        statusSpan.style.color = '#E74C3C';
+        statusSpan.textContent = error.message;
+        statusSpan.style.color = 'var(--accent-danger)';
     }
 
     event.target.value = '';
@@ -617,8 +617,8 @@ function downloadTemplate() {
     document.body.removeChild(link);
 
     const statusSpan = document.getElementById('uploadStatus');
-    statusSpan.textContent = '✅ Sjabloon gedownload';
-    statusSpan.style.color = '#27AE60';
+    statusSpan.textContent = 'Sjabloon gedownload';
+    statusSpan.style.color = 'var(--accent-success)';
     setTimeout(() => {
         statusSpan.textContent = '';
     }, 4000);
