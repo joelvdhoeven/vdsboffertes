@@ -119,14 +119,14 @@ def find_best_matches(
     for item in prijzenboek:
         # Calculate text similarity score
         text_score = calculate_fuzzy_score(
-            werkzaamheid["omschrijving"],
-            item["omschrijving"]
+            werkzaamheid.get("omschrijving", ""),
+            item.get("omschrijving", "")
         )
 
         # Calculate unit match score
         unit_score = calculate_unit_score(
-            werkzaamheid["eenheid"],
-            item["eenheid"]
+            werkzaamheid.get("eenheid", ""),
+            item.get("eenheid", "")
         )
 
         # Combined score (weighted)
