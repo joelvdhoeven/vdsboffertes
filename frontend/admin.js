@@ -43,7 +43,7 @@ function renderTable() {
     if (prijzenboekData.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" style="text-align: center; padding: 40px;">
+                <td colspan="7" style="text-align: center; padding: 40px;">
                     <p>Geen items gevonden</p>
                     <button class="btn" onclick="showAddModal()" style="margin-top: 15px;">+ Voeg Eerste Item Toe</button>
                 </td>
@@ -70,6 +70,9 @@ function renderTable() {
                 <div class="editable-cell" onclick="editCell(this, ${index}, 'uren')">€${(item.uren || 0).toFixed(2)}</div>
             </td>
             <td>
+                <div class="editable-cell" onclick="editCell(this, ${index}, 'prijs_per_stuk')">€${(item.prijs_per_stuk || 0).toFixed(2)}</div>
+            </td>
+            <td>
                 <div class="actions">
                     <button class="btn btn-sm btn-danger" onclick="deleteItem(${index})">🗑️ Verwijder</button>
                 </div>
@@ -80,16 +83,15 @@ function renderTable() {
 
 function editCell(cell, index, field) {
     const currentValue = prijzenboekData[index][field] || '';
-    const displayValue = field === 'materiaal' || field === 'uren'
-        ? currentValue
-        : currentValue;
+    const displayValue = currentValue;
+    const isNumericField = ['materiaal', 'uren', 'prijs_per_stuk'].includes(field);
 
     cell.innerHTML = `
-        <input type="${field === 'materiaal' || field === 'uren' ? 'number' : 'text'}"
+        <input type="${isNumericField ? 'number' : 'text'}"
                value="${displayValue}"
                onblur="saveCell(this, ${index}, '${field}')"
                onkeypress="if(event.key==='Enter') this.blur()"
-               step="${field === 'materiaal' || field === 'uren' ? '0.01' : ''}"
+               step="${isNumericField ? '0.01' : ''}"
                autofocus>
     `;
     cell.querySelector('input').focus();
@@ -97,8 +99,9 @@ function editCell(cell, index, field) {
 
 function saveCell(input, index, field) {
     const value = input.value;
+    const isNumericField = ['materiaal', 'uren', 'prijs_per_stuk'].includes(field);
 
-    if (field === 'materiaal' || field === 'uren') {
+    if (isNumericField) {
         prijzenboekData[index][field] = parseFloat(value) || 0;
     } else {
         prijzenboekData[index][field] = value;
@@ -134,20 +137,20 @@ function handleAddItem(event) {
         omschrijving: document.getElementById('newOmschrijving').value,
         omschrijving_offerte: document.getElementById('newOfferteOmschrijving').value || document.getElementById('newOmschrijving').value,
 
-        // Ruimtes
-        algemeen_woning: parseFloat(document.getElementById('newAlgemeenWoning').value) || 0,
-        hal_overloop: parseFloat(document.getElementById('newHalOverloop').value) || 0,
-        woonkamer: parseFloat(document.getElementById('newWoonkamer').value) || 0,
-        keuken: parseFloat(document.getElementById('newKeuken').value) || 0,
-        toilet: parseFloat(document.getElementById('newToilet').value) || 0,
-        badkamer: parseFloat(document.getElementById('newBadkamer').value) || 0,
-        slaapk_voor_kl: parseFloat(document.getElementById('newSlaapkVoorKL').value) || 0,
-        slaapk_voor_gr: parseFloat(document.getElementById('newSlaapkVoorGR').value) || 0,
-        slaapk_achter_kl: parseFloat(document.getElementById('newSlaapkAchterKL').value) || 0,
-        slaapk_achter_gr: parseFloat(document.getElementById('newSlaapkAchterGR').value) || 0,
-        zolder: parseFloat(document.getElementById('newZolder').value) || 0,
-        berging: parseFloat(document.getElementById('newBerging').value) || 0,
-        meerwerk: parseFloat(document.getElementById('newMeerwerk').value) || 0,
+        // Ruimtes - allemaal op 0 (worden niet meer handmatig ingevoerd)
+        algemeen_woning: 0,
+        hal_overloop: 0,
+        woonkamer: 0,
+        keuken: 0,
+        toilet: 0,
+        badkamer: 0,
+        slaapk_voor_kl: 0,
+        slaapk_voor_gr: 0,
+        slaapk_achter_kl: 0,
+        slaapk_achter_gr: 0,
+        zolder: 0,
+        berging: 0,
+        meerwerk: 0,
 
         // Prijzen
         totaal: parseFloat(document.getElementById('newTotaal').value) || 0,

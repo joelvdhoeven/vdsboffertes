@@ -26,41 +26,44 @@ def parse_prijzenboek_new(file_path: str) -> List[Dict[str, Any]]:
     sheet = wb.active
 
     prijzenboek = []
+    row_num = 1  # Will be incremented to 2 at first iteration
 
-    # Start from row 2 (skip header)
-    for row_num in range(2, sheet.max_row + 1):
-        # Get values - Basis informatie
-        code = sheet.cell(row=row_num, column=1).value  # A
-        omschrijving = sheet.cell(row=row_num, column=2).value  # B
+    # Use iter_rows for much better performance with read_only mode
+    for row in sheet.iter_rows(min_row=2, max_col=25, values_only=True):
+        row_num += 1  # Increment at start (2, 3, 4, ...)
+
+        # Get values from tuple - Basis informatie
+        code = row[0] if len(row) > 0 else None  # A
+        omschrijving = row[1] if len(row) > 1 else None  # B
 
         # Skip empty rows
         if not code or not omschrijving:
             continue
 
-        # Ruimtes (C-O)
-        algemeen_woning = sheet.cell(row=row_num, column=3).value  # C
-        hal_overloop = sheet.cell(row=row_num, column=4).value  # D
-        woonkamer = sheet.cell(row=row_num, column=5).value  # E
-        keuken = sheet.cell(row=row_num, column=6).value  # F
-        toilet = sheet.cell(row=row_num, column=7).value  # G
-        badkamer = sheet.cell(row=row_num, column=8).value  # H
-        slaapk_voor_kl = sheet.cell(row=row_num, column=9).value  # I
-        slaapk_voor_gr = sheet.cell(row=row_num, column=10).value  # J
-        slaapk_achter_kl = sheet.cell(row=row_num, column=11).value  # K
-        slaapk_achter_gr = sheet.cell(row=row_num, column=12).value  # L
-        zolder = sheet.cell(row=row_num, column=13).value  # M
-        berging = sheet.cell(row=row_num, column=14).value  # N
-        meerwerk = sheet.cell(row=row_num, column=15).value  # O
+        # Ruimtes (C-O) - indices 2-14
+        algemeen_woning = row[2] if len(row) > 2 else None  # C
+        hal_overloop = row[3] if len(row) > 3 else None  # D
+        woonkamer = row[4] if len(row) > 4 else None  # E
+        keuken = row[5] if len(row) > 5 else None  # F
+        toilet = row[6] if len(row) > 6 else None  # G
+        badkamer = row[7] if len(row) > 7 else None  # H
+        slaapk_voor_kl = row[8] if len(row) > 8 else None  # I
+        slaapk_voor_gr = row[9] if len(row) > 9 else None  # J
+        slaapk_achter_kl = row[10] if len(row) > 10 else None  # K
+        slaapk_achter_gr = row[11] if len(row) > 11 else None  # L
+        zolder = row[12] if len(row) > 12 else None  # M
+        berging = row[13] if len(row) > 13 else None  # N
+        meerwerk = row[14] if len(row) > 14 else None  # O
 
-        # Prijzen
-        totaal = sheet.cell(row=row_num, column=17).value  # Q
-        eenheid = sheet.cell(row=row_num, column=18).value  # R
-        materiaal = sheet.cell(row=row_num, column=19).value  # S
-        uren = sheet.cell(row=row_num, column=20).value  # T
-        prijs_per_stuk = sheet.cell(row=row_num, column=21).value  # U
-        totaal_excl = sheet.cell(row=row_num, column=23).value  # W
-        totaal_incl = sheet.cell(row=row_num, column=24).value  # X
-        omschrijving_offerte = sheet.cell(row=row_num, column=25).value  # Y
+        # Prijzen - indices 16-24 (skip P which is index 15, V which is index 21)
+        totaal = row[16] if len(row) > 16 else None  # Q
+        eenheid = row[17] if len(row) > 17 else None  # R
+        materiaal = row[18] if len(row) > 18 else None  # S
+        uren = row[19] if len(row) > 19 else None  # T
+        prijs_per_stuk = row[20] if len(row) > 20 else None  # U
+        totaal_excl = row[22] if len(row) > 22 else None  # W
+        totaal_incl = row[23] if len(row) > 23 else None  # X
+        omschrijving_offerte = row[24] if len(row) > 24 else None  # Y
 
         # Normalize eenheid
         if eenheid:

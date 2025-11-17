@@ -367,12 +367,13 @@
                                 <th>Eenheid</th>
                                 <th>Materiaal €</th>
                                 <th>Uren €</th>
+                                <th>Prijs/stuk €</th>
                                 <th>Acties</th>
                             </tr>
                         </thead>
                         <tbody id="tableBody">
                             <tr>
-                                <td colspan="6" style="text-align: center; padding: 40px;">
+                                <td colspan="7" style="text-align: center; padding: 40px;">
                                     <p>Laden...</p>
                                 </td>
                             </tr>
@@ -403,64 +404,7 @@
                     <input type="text" id="newOfferteOmschrijving" placeholder="Beschrijving voor offerte">
                 </div>
 
-                <!-- Ruimtes -->
-                <h3 style="color: var(--primary-color); margin-top: 20px; margin-bottom: 15px; border-bottom: 2px solid var(--border-color); padding-bottom: 5px;">Ruimtes (Aantallen)</h3>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
-                    <div class="form-group">
-                        <label>Algemeen woning</label>
-                        <input type="number" step="0.01" id="newAlgemeenWoning" placeholder="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Hal / Overloop</label>
-                        <input type="number" step="0.01" id="newHalOverloop" placeholder="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Woonkamer</label>
-                        <input type="number" step="0.01" id="newWoonkamer" placeholder="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Keuken</label>
-                        <input type="number" step="0.01" id="newKeuken" placeholder="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Toilet</label>
-                        <input type="number" step="0.01" id="newToilet" placeholder="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Badkamer</label>
-                        <input type="number" step="0.01" id="newBadkamer" placeholder="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Slaapk voor KL</label>
-                        <input type="number" step="0.01" id="newSlaapkVoorKL" placeholder="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Slaapk voor GR</label>
-                        <input type="number" step="0.01" id="newSlaapkVoorGR" placeholder="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Slaapk achter KL</label>
-                        <input type="number" step="0.01" id="newSlaapkAchterKL" placeholder="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Slaapk achter GR</label>
-                        <input type="number" step="0.01" id="newSlaapkAchterGR" placeholder="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Zolder</label>
-                        <input type="number" step="0.01" id="newZolder" placeholder="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Berging</label>
-                        <input type="number" step="0.01" id="newBerging" placeholder="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Meerwerk</label>
-                        <input type="number" step="0.01" id="newMeerwerk" placeholder="0">
-                    </div>
-                </div>
-
-                <!-- Prijzen -->
+                <!-- Prijzen (eerst want dit is het belangrijkste) -->
                 <h3 style="color: var(--primary-color); margin-top: 20px; margin-bottom: 15px; border-bottom: 2px solid var(--border-color); padding-bottom: 5px;">Prijzen</h3>
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
                     <div class="form-group">
