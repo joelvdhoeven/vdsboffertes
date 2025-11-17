@@ -344,25 +344,20 @@ async def get_session_status(session_id: str):
 # Admin endpoints
 @app.get("/api/admin/prijzenboek")
 async def get_prijzenboek_admin():
-    """Get prijzenboek data for admin panel"""
+    """Get prijzenboek data for admin panel from database"""
     try:
-        # Load the default prijzenboek file
-        default_prijzenboek_path = Path(__file__).parent / "Juiste opnamelijst.xlsx"
-
-        if not default_prijzenboek_path.exists():
-            raise HTTPException(status_code=404, detail="Prijzenboek file not found")
-
-        # Use new parser for the new format
+        # Import database
         try:
-            from .excel_parser_new import parse_prijzenboek_new
+            from .database import get_db
         except ImportError:
-            from excel_parser_new import parse_prijzenboek_new
+            from database import get_db
 
-        prijzenboek_items = parse_prijzenboek_new(str(default_prijzenboek_path))
+        db = get_db()
+        items = db.get_all_items()
 
         return {
-            "items": prijzenboek_items,
-            "total": len(prijzenboek_items)
+            "items": items,
+            "total": len(items)
         }
 
     except Exception as e:
@@ -371,67 +366,76 @@ async def get_prijzenboek_admin():
 
 @app.post("/api/admin/prijzenboek")
 async def save_prijzenboek_admin(data: Dict[str, Any]):
-    """Save updated prijzenboek data"""
+    """Save updated prijzenboek data to database"""
     try:
-        import openpyxl
+        # Import database
+        try:
+            from .database import get_db
+        except ImportError:
+            from database import get_db
 
-        # Load the workbook
-        prijzenboek_path = Path(__file__).parent / "Juiste opnamelijst.xlsx"
-
-        if not prijzenboek_path.exists():
-            raise HTTPException(status_code=404, detail="Prijzenboek file not found")
-
-        wb = openpyxl.load_workbook(str(prijzenboek_path))
-        sheet = wb.active
-
-        # Update existing rows and add new ones
+        db = get_db()
         items = data.get("items", [])
 
-        # Clear existing data (keep headers)
-        for row in range(2, sheet.max_row + 1):
-            for col in range(1, sheet.max_column + 1):
-                sheet.cell(row=row, column=col).value = None
-
-        # Write updated data with all columns
-        for idx, item in enumerate(items, start=2):
-            # Basis informatie
-            sheet.cell(row=idx, column=1).value = item.get("code", "")  # A
-            sheet.cell(row=idx, column=2).value = item.get("omschrijving", "")  # B
-
-            # Ruimtes (C-O)
-            sheet.cell(row=idx, column=3).value = item.get("algemeen_woning", 0)  # C
-            sheet.cell(row=idx, column=4).value = item.get("hal_overloop", 0)  # D
-            sheet.cell(row=idx, column=5).value = item.get("woonkamer", 0)  # E
-            sheet.cell(row=idx, column=6).value = item.get("keuken", 0)  # F
-            sheet.cell(row=idx, column=7).value = item.get("toilet", 0)  # G
-            sheet.cell(row=idx, column=8).value = item.get("badkamer", 0)  # H
-            sheet.cell(row=idx, column=9).value = item.get("slaapk_voor_kl", 0)  # I
-            sheet.cell(row=idx, column=10).value = item.get("slaapk_voor_gr", 0)  # J
-            sheet.cell(row=idx, column=11).value = item.get("slaapk_achter_kl", 0)  # K
-            sheet.cell(row=idx, column=12).value = item.get("slaapk_achter_gr", 0)  # L
-            sheet.cell(row=idx, column=13).value = item.get("zolder", 0)  # M
-            sheet.cell(row=idx, column=14).value = item.get("berging", 0)  # N
-            sheet.cell(row=idx, column=15).value = item.get("meerwerk", 0)  # O
-
-            # Totaal en prijzen
-            sheet.cell(row=idx, column=17).value = item.get("totaal", 0)  # Q
-            sheet.cell(row=idx, column=18).value = item.get("eenheid", "")  # R
-            sheet.cell(row=idx, column=19).value = item.get("materiaal", 0)  # S
-            sheet.cell(row=idx, column=20).value = item.get("uren", 0)  # T
-            sheet.cell(row=idx, column=21).value = item.get("prijs_per_stuk", 0)  # U
-            sheet.cell(row=idx, column=23).value = item.get("totaal_excl", 0)  # W
-            sheet.cell(row=idx, column=24).value = item.get("totaal_incl", 0)  # X
-            sheet.cell(row=idx, column=25).value = item.get("omschrijving_offerte", item.get("omschrijving", ""))  # Y
-
-        # Save workbook
-        wb.save(str(prijzenboek_path))
-        wb.close()
+        # Use bulk upsert to update database
+        result = db.bulk_upsert(items)
 
         return {
             "success": True,
-            "message": "Prijzenboek successfully updated",
-            "items_saved": len(items)
+            "message": f"Prijzenboek successfully updated (added: {result['added']}, updated: {result['updated']})",
+            "items_saved": len(items),
+            "added": result['added'],
+            "updated": result['updated']
         }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/admin/prijzenboek/item")
+async def add_prijzenboek_item(item: Dict[str, Any]):
+    """Add single item to prijzenboek database"""
+    try:
+        # Import database
+        try:
+            from .database import get_db
+        except ImportError:
+            from database import get_db
+
+        db = get_db()
+        result = db.upsert_item(item)
+
+        return {
+            "success": True,
+            "action": result,
+            "code": item.get("code", ""),
+            "message": f"Item {result}: {item.get('code', '')}"
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/admin/prijzenboek/item/{code}")
+async def delete_prijzenboek_item(code: str):
+    """Delete item from prijzenboek database"""
+    try:
+        # Import database
+        try:
+            from .database import get_db
+        except ImportError:
+            from database import get_db
+
+        db = get_db()
+        success = db.delete_item(code)
+
+        if success:
+            return {
+                "success": True,
+                "message": f"Item {code} deleted"
+            }
+        else:
+            raise HTTPException(status_code=404, detail=f"Item {code} not found")
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

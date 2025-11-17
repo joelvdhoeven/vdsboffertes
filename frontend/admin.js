@@ -97,7 +97,7 @@ function editCell(cell, index, field) {
     cell.querySelector('input').focus();
 }
 
-function saveCell(input, index, field) {
+async function saveCell(input, index, field) {
     const value = input.value;
     const isNumericField = ['materiaal', 'uren', 'prijs_per_stuk'].includes(field);
 
@@ -105,6 +105,28 @@ function saveCell(input, index, field) {
         prijzenboekData[index][field] = parseFloat(value) || 0;
     } else {
         prijzenboekData[index][field] = value;
+    }
+
+    // Save to database
+    try {
+        const item = prijzenboekData[index];
+        const response = await fetch(`${API_BASE_URL}/api/admin/prijzenboek/item`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(item)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to save changes to database');
+        }
+
+        console.log(`Field ${field} updated for ${item.code}`);
+
+    } catch (error) {
+        console.error('Error saving cell:', error);
+        // Don't show alert for every cell edit, just log it
     }
 
     renderTable();
@@ -129,7 +151,7 @@ function closeModal() {
     document.getElementById('addForm').reset();
 }
 
-function handleAddItem(event) {
+async function handleAddItem(event) {
     event.preventDefault();
 
     const materiaal = parseFloat(document.getElementById('newMateriaal').value) || 0;
@@ -166,19 +188,65 @@ function handleAddItem(event) {
         totaal_incl: 0   // Niet meer nodig in UI
     };
 
-    prijzenboekData.push(newItem);
-    renderTable();
-    updateStats();
-    closeModal();
+    // Save directly to database
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/admin/prijzenboek/item`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(newItem)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to save item to database');
+        }
+
+        const result = await response.json();
+        console.log('Item saved:', result);
+
+        // Add to local list
+        prijzenboekData.push(newItem);
+        renderTable();
+        updateStats();
+        closeModal();
+
+        // Show success message
+        alert(`✅ Item ${result.action}: ${newItem.code}`);
+
+    } catch (error) {
+        console.error('Error saving item:', error);
+        alert('❌ Fout bij opslaan: ' + error.message);
+    }
 
     return false;
 }
 
-function deleteItem(index) {
+async function deleteItem(index) {
     if (confirm('Weet je zeker dat je dit item wilt verwijderen?')) {
-        prijzenboekData.splice(index, 1);
-        renderTable();
-        updateStats();
+        const item = prijzenboekData[index];
+        const code = item.code;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/admin/prijzenboek/item/${encodeURIComponent(code)}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete item from database');
+            }
+
+            // Remove from local list
+            prijzenboekData.splice(index, 1);
+            renderTable();
+            updateStats();
+
+            console.log(`Item ${code} deleted from database`);
+
+        } catch (error) {
+            console.error('Error deleting item:', error);
+            alert('❌ Fout bij verwijderen: ' + error.message);
+        }
     }
 }
 
