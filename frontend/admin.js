@@ -43,7 +43,7 @@ function renderTable() {
     if (prijzenboekData.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" style="text-align: center; padding: 40px;">
+                <td colspan="7" style="text-align: center; padding: 40px;">
                     <p>Geen items gevonden</p>
                     <button class="btn" onclick="showAddModal()" style="margin-top: 15px;">+ Voeg Eerste Item Toe</button>
                 </td>
@@ -70,6 +70,9 @@ function renderTable() {
                 <div class="editable-cell" onclick="editCell(this, ${index}, 'uren')">€${(item.uren || 0).toFixed(2)}</div>
             </td>
             <td>
+                <div class="editable-cell" onclick="editCell(this, ${index}, 'prijs_per_stuk')">€${(item.prijs_per_stuk || 0).toFixed(2)}</div>
+            </td>
+            <td>
                 <div class="actions">
                     <button class="btn btn-sm btn-danger" onclick="deleteItem(${index})">🗑️ Verwijder</button>
                 </div>
@@ -80,28 +83,50 @@ function renderTable() {
 
 function editCell(cell, index, field) {
     const currentValue = prijzenboekData[index][field] || '';
-    const displayValue = field === 'materiaal' || field === 'uren'
-        ? currentValue
-        : currentValue;
+    const displayValue = currentValue;
+    const isNumericField = ['materiaal', 'uren', 'prijs_per_stuk'].includes(field);
 
     cell.innerHTML = `
-        <input type="${field === 'materiaal' || field === 'uren' ? 'number' : 'text'}"
+        <input type="${isNumericField ? 'number' : 'text'}"
                value="${displayValue}"
                onblur="saveCell(this, ${index}, '${field}')"
                onkeypress="if(event.key==='Enter') this.blur()"
-               step="${field === 'materiaal' || field === 'uren' ? '0.01' : ''}"
+               step="${isNumericField ? '0.01' : ''}"
                autofocus>
     `;
     cell.querySelector('input').focus();
 }
 
-function saveCell(input, index, field) {
+async function saveCell(input, index, field) {
     const value = input.value;
+    const isNumericField = ['materiaal', 'uren', 'prijs_per_stuk'].includes(field);
 
-    if (field === 'materiaal' || field === 'uren') {
+    if (isNumericField) {
         prijzenboekData[index][field] = parseFloat(value) || 0;
     } else {
         prijzenboekData[index][field] = value;
+    }
+
+    // Save to database
+    try {
+        const item = prijzenboekData[index];
+        const response = await fetch(`${API_BASE_URL}/api/admin/prijzenboek/item`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(item)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to save changes to database');
+        }
+
+        console.log(`Field ${field} updated for ${item.code}`);
+
+    } catch (error) {
+        console.error('Error saving cell:', error);
+        // Don't show alert for every cell edit, just log it
     }
 
     renderTable();
@@ -126,52 +151,102 @@ function closeModal() {
     document.getElementById('addForm').reset();
 }
 
-function handleAddItem(event) {
+async function handleAddItem(event) {
     event.preventDefault();
+
+    const materiaal = parseFloat(document.getElementById('newMateriaal').value) || 0;
+    const uren = parseFloat(document.getElementById('newUren').value) || 0;
+    const prijs_per_stuk = parseFloat(document.getElementById('newPrijsPerStuk').value) || 0;
 
     const newItem = {
         code: document.getElementById('newCode').value,
         omschrijving: document.getElementById('newOmschrijving').value,
         omschrijving_offerte: document.getElementById('newOfferteOmschrijving').value || document.getElementById('newOmschrijving').value,
 
-        // Ruimtes
-        algemeen_woning: parseFloat(document.getElementById('newAlgemeenWoning').value) || 0,
-        hal_overloop: parseFloat(document.getElementById('newHalOverloop').value) || 0,
-        woonkamer: parseFloat(document.getElementById('newWoonkamer').value) || 0,
-        keuken: parseFloat(document.getElementById('newKeuken').value) || 0,
-        toilet: parseFloat(document.getElementById('newToilet').value) || 0,
-        badkamer: parseFloat(document.getElementById('newBadkamer').value) || 0,
-        slaapk_voor_kl: parseFloat(document.getElementById('newSlaapkVoorKL').value) || 0,
-        slaapk_voor_gr: parseFloat(document.getElementById('newSlaapkVoorGR').value) || 0,
-        slaapk_achter_kl: parseFloat(document.getElementById('newSlaapkAchterKL').value) || 0,
-        slaapk_achter_gr: parseFloat(document.getElementById('newSlaapkAchterGR').value) || 0,
-        zolder: parseFloat(document.getElementById('newZolder').value) || 0,
-        berging: parseFloat(document.getElementById('newBerging').value) || 0,
-        meerwerk: parseFloat(document.getElementById('newMeerwerk').value) || 0,
+        // Ruimtes - allemaal op 0 (worden niet meer handmatig ingevoerd)
+        algemeen_woning: 0,
+        hal_overloop: 0,
+        woonkamer: 0,
+        keuken: 0,
+        toilet: 0,
+        badkamer: 0,
+        slaapk_voor_kl: 0,
+        slaapk_voor_gr: 0,
+        slaapk_achter_kl: 0,
+        slaapk_achter_gr: 0,
+        zolder: 0,
+        berging: 0,
+        meerwerk: 0,
 
         // Prijzen
-        totaal: parseFloat(document.getElementById('newTotaal').value) || 0,
+        totaal: 0,  // Wordt berekend op basis van ruimtes
         eenheid: document.getElementById('newEenheid').value || 'stu',
-        materiaal: parseFloat(document.getElementById('newMateriaal').value) || 0,
-        uren: parseFloat(document.getElementById('newUren').value) || 0,
-        prijs_per_stuk: parseFloat(document.getElementById('newPrijsPerStuk').value) || 0,
-        totaal_excl: parseFloat(document.getElementById('newTotaalExcl').value) || 0,
-        totaal_incl: parseFloat(document.getElementById('newTotaalIncl').value) || 0
+        materiaal: materiaal,
+        uren: uren,
+        prijs_per_stuk: prijs_per_stuk,
+        totaal_excl: 0,  // Niet meer nodig in UI
+        totaal_incl: 0   // Niet meer nodig in UI
     };
 
-    prijzenboekData.push(newItem);
-    renderTable();
-    updateStats();
-    closeModal();
+    // Save directly to database
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/admin/prijzenboek/item`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(newItem)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to save item to database');
+        }
+
+        const result = await response.json();
+        console.log('Item saved:', result);
+
+        // Add to local list
+        prijzenboekData.push(newItem);
+        renderTable();
+        updateStats();
+        closeModal();
+
+        // Show success message
+        alert(`✅ Item ${result.action}: ${newItem.code}`);
+
+    } catch (error) {
+        console.error('Error saving item:', error);
+        alert('❌ Fout bij opslaan: ' + error.message);
+    }
 
     return false;
 }
 
-function deleteItem(index) {
+async function deleteItem(index) {
     if (confirm('Weet je zeker dat je dit item wilt verwijderen?')) {
-        prijzenboekData.splice(index, 1);
-        renderTable();
-        updateStats();
+        const item = prijzenboekData[index];
+        const code = item.code;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/admin/prijzenboek/item/${encodeURIComponent(code)}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete item from database');
+            }
+
+            // Remove from local list
+            prijzenboekData.splice(index, 1);
+            renderTable();
+            updateStats();
+
+            console.log(`Item ${code} deleted from database`);
+
+        } catch (error) {
+            console.error('Error deleting item:', error);
+            alert('❌ Fout bij verwijderen: ' + error.message);
+        }
     }
 }
 
@@ -248,77 +323,58 @@ async function handlePrijzenboekUpload(event) {
 }
 
 function downloadTemplate() {
-    // Create template matching the actual Excel structure
-    // Columns: A-B (Code, Omschrijving), C-O (Ruimtes), Q (Totaal), R-Y (Eenheid, Prijzen, etc.)
+    // Create simplified template for easy import
+    // Uses semicolon delimiter for Excel compatibility
     const template = [
-        // Headers
+        // Headers - simplified structure matching user's data
         [
             'CODERING DATABASE',
             'OMSCHRIJVING VAKMAN MUTATIE',
-            'Algemeen woning',
-            'Hal / Overloop',
-            'Woonkamer',
-            'Keuken',
-            'Toilet',
-            'Badkamer',
-            'Slaapk voor KL',
-            'Slaapk voor GR',
-            'Slaapk achter KL',
-            'Slaapk achter GR',
-            'Zolder',
-            'Berging',
-            'Meerwerk',
-            '', // Kolom P leeg
-            'TOTAAL',
             'EENHEID',
             'Materiaal per stuk EXCL BTW',
             'Uren per stuk EXCL BTW',
             'Prijs per stuk EXCL BTW',
-            '', // Kolom V leeg
-            'TOTAAL EXCL BTW',
-            'TOTAAL INCL BTW',
             'OMSCHRIJVING OFFERTE MUTATIE'
         ],
         // Example rows
         [
             '0000011001',
-            'Badkamerrenovatie >0 - 2 m2',
-            '', '', '', '', '', '', '', '', '', '', '', '', '0', '',
-            '0',
+            'Badkamerrenovatie >0 - 2 m²',
             'stu',
             '6285.20',
             '0.00',
             '6285.20',
-            '',
-            '0.00',
-            '0.00',
-            'Badkamerrenovatie >0 - 2 m2'
+            'Badkamerrenovatie >0 - 2 m²'
         ],
         [
-            'A.01.001',
-            'Voorbeeld werkzaamheid',
-            '', '', '', '', '', '', '', '', '', '', '', '', '0', '',
-            '0',
+            '0017004001',
+            'woning bezemschoon opleveren',
+            'won',
+            '0.00',
+            '132.06',
+            '132.06',
+            'woning bezemschoon opleveren'
+        ],
+        [
+            '0017004005',
+            'woning per m2 beschermen/afdekken',
             'm2',
-            '15.50',
-            '2.00',
-            '17.50',
-            '',
-            '0.00',
-            '0.00',
-            'Voorbeeld werkzaamheid'
+            '1.12',
+            '2.64',
+            '3.76',
+            'woning per m2 beschermen/afdekken'
         ]
     ];
 
-    // Convert to CSV
+    // Convert to CSV with semicolon delimiter (Excel-friendly)
     const csv = template.map(row => row.map(cell => {
-        // Escape cells with commas or quotes
+        // Escape cells with semicolons or quotes
         const str = String(cell);
-        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        if (str.includes(';') || str.includes('"') || str.includes('\n')) {
             return '"' + str.replace(/"/g, '""') + '"';
         }
         return str;
-    }).join(',')).join('\n');
+    }).join(';')).join('\n');
 
     // Add UTF-8 BOM for proper Excel encoding
     const BOM = '\uFEFF';
@@ -338,7 +394,7 @@ function downloadTemplate() {
 
     // Show confirmation
     const statusSpan = document.getElementById('uploadStatus');
-    statusSpan.textContent = '✅ Sjabloon gedownload - Importeer in Excel voor beste resultaten';
+    statusSpan.textContent = '✅ Sjabloon gedownload (puntkomma-gescheiden) - Open in Excel of teksteditor';
     statusSpan.style.color = '#27AE60';
     setTimeout(() => {
         statusSpan.textContent = '';

@@ -31,3 +31,7 @@ uploads/
 
 # Logs
 *.log
+
+# Database
+*.db
+!backend/prijzenboek.db
