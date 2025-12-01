@@ -16,7 +16,8 @@
       "Bash(tasklist)",
       "Bash(findstr:*)",
       "Bash(npx vercel:*)",
-      "Bash(railway --version)"
+      "Bash(railway --version)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []
